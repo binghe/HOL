@@ -7301,6 +7301,41 @@ Proof
                 pos_fn_integral lborel
                  (\y. pos_fn_integral m (\x. abs (f h (x,y)))) <> PosInf’
           >- PROVE_TAC [] \\
+          reverse CONJ_TAC
+          >- (simp [Abbr ‘f’, GSYM extreal_mul_eq, abs_mul, extreal_abs_def,
+                    ABS_INDICATOR] \\
+              Know ‘!y. pos_fn_integral m
+                          (\x. Normal (abs (g y x)) *
+                               Normal (indicator (interval [(t0,t0 + h)]) y)) =
+                        pos_fn_integral m (\x. Normal (abs (g y x))) *
+                        Normal (indicator (interval [(t0,t0 + h)]) y)’
+              >- (Q.X_GEN_TAC ‘t’ \\
+                  ONCE_REWRITE_TAC [mul_comm] \\
+                  HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_POS]) \\
+              Rewr' \\
+              REWRITE_TAC [normal_indicator] \\
+              qmatch_abbrev_tac ‘pos_fn_integral lborel f <> PosInf’ \\
+              Know ‘pos_fn_integral lborel f = integral lborel f’
+              >- (SYM_TAC >> MATCH_MP_TAC integral_pos_fn \\
+                  rw [measure_space_lborel, space_lborel, Abbr ‘f’] \\
+                  MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS] \\
+                  MATCH_MP_TAC pos_fn_integral_pos \\
+                  rw [extreal_of_num_def, extreal_le_eq]) >> Rewr' \\
+              simp [Abbr ‘f’] \\
+              Know ‘!y. pos_fn_integral m (\x. Normal (abs (g y x))) =
+                               integral m (\x. Normal (abs (g y x)))’
+              >- (Q.X_GEN_TAC ‘t’ \\
+                  SYM_TAC >> MATCH_MP_TAC integral_pos_fn \\
+                  rw [extreal_of_num_def, extreal_le_eq]) >> Rewr' \\
+              FIRST_X_ASSUM MATCH_MP_TAC \\
+              REWRITE_TAC [COMPACT_INTERVAL]) \\
+       (* hard *)
+          rw [Abbr ‘f’, IN_MEASURABLE, IN_FUNSET, SPACE_BOREL, space_borel,
+              SPACE_PROD_SIGMA, PREIMAGE_def, Abbr ‘l’] \\
+          qabbrev_tac ‘l = interval [t0,t0 + h]’ \\
+          Know ‘{x | (\(x,t). Normal (g t x * indicator l t)) x IN s} =
+                {(x,t) | Normal (g t x * indicator l t) IN s}’
+          >- cheat \\
           cheat) >> Rewr' \\
       simp [Abbr ‘f’, GSYM extreal_mul_eq] \\
       Know ‘!h t. integral m (\x. Normal (g t x) *

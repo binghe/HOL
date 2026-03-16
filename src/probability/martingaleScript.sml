@@ -9590,10 +9590,15 @@ Proof
     NTAC 2 $ first_x_assum $ qspec_then ‘0’ assume_tac >>
     map_every qabbrev_tac [‘s = {x | 0 < f^+ x} INTER m_space m’,‘t = {x | 0 < f^- x} INTER m_space m’] >>
     RES_TAC >> fs[integral_def,fn_plus_mul_indicator,fn_minus_mul_indicator] >>
-    ‘pos_fn_integral m (λx. f^+ x * indicator_fn s x) = pos_fn_integral m f^+ /\ pos_fn_integral m (λx. f^- x * indicator_fn s x) = 0 /\
-        pos_fn_integral m (λx. f^+ x * indicator_fn t x) = 0 /\ pos_fn_integral m (λx. f^- x * indicator_fn t x) = pos_fn_integral m f^-’ suffices_by (strip_tac >> fs[]) >>
+    ‘pos_fn_integral m (λx. f^+ x * indicator_fn s x) =
+     pos_fn_integral m f^+ /\
+     pos_fn_integral m (λx. f^- x * indicator_fn s x) = 0 /\
+     pos_fn_integral m (λx. f^+ x * indicator_fn t x) = 0 /\
+     pos_fn_integral m (λx. f^- x * indicator_fn t x) = pos_fn_integral m f^-’
+        suffices_by (strip_tac >> fs[]) >>
     drule_then (SUBST1_TAC o GSYM) pos_fn_integral_zero >>
-    NTAC 4 $ irule_at Any pos_fn_integral_cong >> simp[FN_PLUS_POS,FN_MINUS_POS,INDICATOR_FN_POS,le_mul] >>
+    NTAC 4 $ irule_at Any pos_fn_integral_cong >>
+    simp[FN_PLUS_POS,FN_MINUS_POS,INDICATOR_FN_POS,le_mul] >>
     NTAC 2 $ pop_assum kall_tac >> rw[indicator_fn_def,Abbr ‘s’,Abbr ‘t’]
     >- (qspecl_then [‘f’,‘x’] mp_tac FN_MINUS_POS >> simp[le_lt])
     >- (fs[fn_plus_def,fn_minus_def] >> Cases_on ‘f x < 0’ >> fs[ineq_imp])
@@ -9603,12 +9608,16 @@ QED
 
 Theorem integral_eq_imp_AE_eq:
     !m f g. measure_space m /\ integrable m f /\ integrable m g /\
-        (!s. s IN measurable_sets m ==> integral m (λx. f x * indicator_fn s x) = integral m (λx. g x * indicator_fn s x)) ==>
-        AE x::m. f x = g x
+           (!s. s IN measurable_sets m ==>
+            integral m (λx. f x * indicator_fn s x) =
+            integral m (λx. g x * indicator_fn s x)) ==>
+            AE x::m. f x = g x
 Proof
     rw[] >>
-    qspecl_then [`m`,`λx. f x = (Normal o real o f) x /\ g x = (Normal o real o g) x /\
-        g x - f x = 0`,`λx. f x = g x`] (irule o SIMP_RULE (srw_ss ()) []) AE_subset >>
+    qspecl_then [`m`,
+                 `λx. f x = (Normal o real o f) x /\ g x = (Normal o real o g) x /\
+                      g x - f x = 0`,`λx. f x = g x`]
+                (irule o SIMP_RULE (srw_ss ()) []) AE_subset >>
     CONJ_TAC >- (rw[] >> Cases_on `f x` >> Cases_on `g x` >> fs[extreal_sub_def]) >>
     qspecl_then [`m`,`λx. f x = Normal (real (f x)) /\ g x = Normal (real (g x))`,
         `λx. g x - f x = 0`] (irule o SIMP_RULE (srw_ss ()) [GSYM CONJ_ASSOC]) AE_INTER >>
@@ -9621,19 +9630,25 @@ Proof
     map_every (fn tms => qspecl_then tms assume_tac integrable_mul_indicator)
         [[`m`,`s`,`f`],[`m`,`s`,`g`]] >>
     rfs[] >> first_x_assum $ drule_then assume_tac >>
-    qspecl_then [`m`,`λx. g x * indicator_fn s x`,`λx. f x * indicator_fn s x`] assume_tac integral_sub' >> rfs[] >>
-    drule_all_then assume_tac integrable_normal_integral >> fs[] >> pop_assum SUBST_ALL_TAC >>
-    fs[extreal_sub_def,normal_0] >> pop_assum $ SUBST1_TAC o SYM >> irule integral_cong >>
+    qspecl_then [`m`,`λx. g x * indicator_fn s x`,`λx. f x * indicator_fn s x`]
+                assume_tac integral_sub' >> rfs[] >>
+    drule_all_then assume_tac integrable_normal_integral >> fs[] >>
+    pop_assum SUBST_ALL_TAC >>
+    fs[extreal_sub_def,normal_0] >> pop_assum $ SUBST1_TAC o SYM >>
+    irule integral_cong >>
     rw[indicator_fn_def]
 QED
 
 Theorem pos_fn_integral_cong':
-    !sp sts mu nu f g. (measure_space (sp,sts,mu) \/ measure_space (sp,sts,nu)) /\
-        (!s. s IN sts ==> mu s = nu s) /\ (!x. x IN sp ==> 0 <= f x \/ 0 <= g x) /\ (!x. x IN sp ==> f x = g x) ==>
+    !sp sts mu nu f g.
+        (measure_space (sp,sts,mu) \/ measure_space (sp,sts,nu)) /\
+        (!s. s IN sts ==> mu s = nu s) /\
+        (!x. x IN sp ==> 0 <= f x \/ 0 <= g x) /\ (!x. x IN sp ==> f x = g x) ==>
         pos_fn_integral (sp,sts,mu) f = pos_fn_integral (sp,sts,nu) g
 Proof
     rw[] >> irule EQ_TRANS >> qexists_tac `pos_fn_integral (sp,sts,nu) f` >>
-    irule_at Any pos_fn_integral_cong_measure >> irule_at Any pos_fn_integral_cong >> fs[] >>
+    irule_at Any pos_fn_integral_cong_measure >>
+    irule_at Any pos_fn_integral_cong >> fs[] >>
     dxrule_then irule measure_space_eq >> simp[]
 QED
 
@@ -9765,25 +9780,33 @@ Proof
 QED
 
 Theorem RN_deriv_pos_fn_integral:
-    !m v f. f IN Borel_measurable (measurable_space m) /\ (!x. x IN m_space m ==> 0 <= f x) /\
-        sigma_finite_measure_space m /\ measure_space (m_space m,measurable_sets m,v) /\ v << m ==>
-        pos_fn_integral (m_space m,measurable_sets m,v) f = pos_fn_integral m (λx. (v / m) x * f x)
+    !m v f. f IN Borel_measurable (measurable_space m) /\
+           (!x. x IN m_space m ==> 0 <= f x) /\
+            sigma_finite_measure_space m /\
+            measure_space (m_space m,measurable_sets m,v) /\ v << m ==>
+            pos_fn_integral (m_space m,measurable_sets m,v) f =
+            pos_fn_integral m (λx. (v / m) x * f x)
 Proof
-    rw[] >>
-    resolve_then Any (qspecl_then [‘measurable_space m’,‘v’,‘measure m’] (irule o SRULE []))
-        RN_deriv_RN_deriv_property RN_deriv_property_pos_fn_integral >>
-    simp[sigma_finite_measure_space_measure_space]
+    rw[]
+ >> resolve_then Any (qspecl_then [‘measurable_space m’,‘v’,‘measure m’]
+                                  (irule o SRULE []))
+        RN_deriv_RN_deriv_property RN_deriv_property_pos_fn_integral
+ >> simp[sigma_finite_measure_space_measure_space]
 QED
 
 Theorem RN_deriv_integral:
-    !m v f. f IN Borel_measurable (measurable_space m) /\ (!x. x IN m_space m ==> 0 <= f x) /\
-        sigma_finite_measure_space m /\ measure_space (m_space m,measurable_sets m,v) /\ v << m ==>
-        integral (m_space m,measurable_sets m,v) f = integral m (λx. (v / m) x * f x)
+    !m v f. f IN Borel_measurable (measurable_space m) /\
+           (!x. x IN m_space m ==> 0 <= f x) /\
+            sigma_finite_measure_space m /\
+            measure_space (m_space m,measurable_sets m,v) /\ v << m ==>
+            integral (m_space m,measurable_sets m,v) f =
+            integral m (λx. (v / m) x * f x)
 Proof
-    rw[] >>
-    resolve_then Any (qspecl_then [‘measurable_space m’,‘v’,‘measure m’] (irule o SRULE []))
-        RN_deriv_RN_deriv_property RN_deriv_property_integral >>
-    simp[sigma_finite_measure_space_measure_space]
+    rw[]
+ >> resolve_then Any (qspecl_then [‘measurable_space m’,‘v’,‘measure m’]
+                                  (irule o SRULE []))
+        RN_deriv_RN_deriv_property RN_deriv_property_integral
+ >> simp[sigma_finite_measure_space_measure_space]
 QED
 
 (* Multiplying RN derivatives *)
@@ -9833,8 +9856,10 @@ Proof
         ‘u / m’,‘v / (m_space m,measurable_sets m,u)’,
         ‘(λx. (u / m) x * (v / (m_space m,measurable_sets m,u)) x)’]
         mp_tac RN_deriv_property_mul >>
-    simp[Excl "SET_SPEC_CONV",sigma_finite_measure_space_measure_space] >> disch_then irule >>
-    qspecl_then [‘measurable_space m’,‘measure m’,‘u’] mp_tac RN_deriv_RN_deriv_property >>
+    simp[Excl "SET_SPEC_CONV",sigma_finite_measure_space_measure_space] >>
+    disch_then irule >>
+    qspecl_then [‘measurable_space m’,‘measure m’,‘u’]
+                mp_tac RN_deriv_RN_deriv_property >>
     impl_tac >- simp[sigma_finite_measure_space_measure_space] >>
     simp[Excl "SET_SPEC_CONV"] >> disch_then kall_tac >>
     qspecl_then [‘measurable_space m’,‘u’,‘v’] mp_tac RN_deriv_RN_deriv_property >>
@@ -9858,9 +9883,10 @@ Theorem RN_deriv_1:
     !m. sigma_finite_measure_space m ==> AE x::m. ((measure m) / m) x = 1
 Proof
     rw[] >> qabbrev_tac ‘deriv = RN_deriv_property’ >>
-    qspecl_then [‘measurable_space m’,‘measure m’,‘measure m’,‘λx. 1’,‘measure m / m’] mp_tac
-        RN_deriv_property_almost_RN_deriv >>
-    simp[Excl "SET_SPEC_CONV",SF ETA_ss,measure_absolutely_continuous_self] >> disch_then irule >>
+    qspecl_then [‘measurable_space m’,‘measure m’,‘measure m’,‘λx. 1’,
+                 ‘measure m / m’] mp_tac RN_deriv_property_almost_RN_deriv >>
+    simp[Excl "SET_SPEC_CONV",SF ETA_ss,measure_absolutely_continuous_self] >>
+    disch_then irule >>
     qspecl_then [‘measurable_space m’,‘measure m’] mp_tac RN_deriv_property_1 >>
     simp[Excl "SET_SPEC_CONV",SF ETA_ss,sigma_finite_measure_space_measure_space]
 QED
@@ -9872,11 +9898,14 @@ Theorem RN_deriv_inv:
         AE x::m. (measure m / (m_space m,measurable_sets m,v)) x = inv ((v / m) x)
 Proof
     rw[] >>
-    qspecl_then [‘m’,‘λx. P1 x /\ P2 x’] (resolve_then Any (qspecl_then [‘m’,
+    qspecl_then [‘m’,‘λx. P1 x /\ P2 x’]
+     (resolve_then Any (qspecl_then [‘m’,
         ‘λx. (measure m / (m_space m,measurable_sets m,v)) x = inv ((v / m) x)’,
         ‘λx. ((measure m) / m) x = 1’,
-        ‘λx. (v / m) x * (measure m / (m_space m,measurable_sets m,v)) x = (measure m / m) x’] mp_tac)
-        AE_INTER o SRULE [] o GENL [“m:'a m_space”,“P1:'a->bool”,“P2:'a->bool”]) AE_subset >>
+        ‘λx. (v / m) x * (measure m / (m_space m,measurable_sets m,v)) x =
+             (measure m / m) x’] mp_tac)
+        AE_INTER o SRULE [] o GENL [“m:'a m_space”,“P1:'a->bool”,“P2:'a->bool”])
+      AE_subset >>
     simp[sigma_finite_measure_space_measure_space] >>
     disch_then irule >> irule_at Any RN_deriv_1 >> irule_at Any RN_deriv_mul >>
     rw[] >> pop_assum SUBST_ALL_TAC >> simp[rinv_uniq]
