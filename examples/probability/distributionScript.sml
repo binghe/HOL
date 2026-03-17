@@ -7686,11 +7686,47 @@ QED
                real (integral lborel (\x. Normal (diff1 (\t. u t x) t))))
                 (at t)
  *)
-Theorem gauge_differentiable_lemma_revisited =
+Theorem gauge_differentiable_lemma_revisited_lemma[local] =
         differentiable_lemma_revisited
      |> ISPEC “lborel”
      |> SRULE [sigma_finite_measure_space_def, space_lborel, lborel_def,
                sigma_finite_lborel, measure_space_lborel]
+
+Theorem gauge_differentiable_lemma_revisited :
+    !u. (!t. integrable lborel (Normal o u t)) /\
+        (!x. (\t. u t x) differentiable_on univ(:real)) /\
+        (!x. integrable lborel (Normal o diff1 (\t. u t x))) /\
+        (!t. integrable lborel (\x. Normal (diff1 (\t. u t x) t))) /\
+        (\t. real (integral lborel (\x. Normal (diff1 (\t. u t x) t))))
+             continuous_on univ(:real) /\
+        (!k. compact k ==>
+             integral lborel
+               (\t. integral lborel
+                      (\x. Normal (abs (diff1 (\t. u t x) t))) *
+                    indicator_fn k t) <> PosInf) /\
+        (\(x,t). Normal (diff1 (\t. u t x) t)) IN
+                 Borel_measurable (borel CROSS borel)
+       ==>
+        (\t. real (integral lborel (Normal o u t))) differentiable_on UNIV /\
+         !t. diff1 (\t. real (integral lborel (Normal o u t))) t =
+             real (integral lborel (\x. Normal (diff1 (\t. u t x) t)))
+Proof
+    Q.X_GEN_TAC ‘u’
+ >> STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘u’ gauge_differentiable_lemma_revisited) >> simp []
+ >> DISCH_TAC
+ >> CONJ_TAC
+ >- (rw [differentiable_on, differentiable_alt_has_vector_derivative,
+         NET_WITHIN_UNIV] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘x’) \\
+     qmatch_abbrev_tac ‘(f has_vector_derivative l) (at x) ==> _’ \\
+     DISCH_TAC \\
+     Q.EXISTS_TAC ‘l’ >> art [])
+ >> Q.X_GEN_TAC ‘t’
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘t’)
+ >> qmatch_abbrev_tac ‘(f has_vector_derivative l) (at t) ==> _’
+ >> REWRITE_TAC [has_vector_derivative_imp_diff1]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (*  Hermite polynomials (probabilist's) [9]                                  *)
