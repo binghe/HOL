@@ -7138,27 +7138,25 @@ QED
    This is beyond the textbook statements.    -- Chun Tian (binghe), 17 mar 2026
  *)
 Theorem differentiable_lemma_revisited :
-    !s m u. sigma_finite_measure_space (m :'a m_space) /\
-           (!t. integrable m (Normal o u t)) /\
-           (!x. x IN m_space m ==> (\t. u t x) differentiable_on UNIV) /\
-           (!x. x IN m_space m ==>
-                integrable lborel (Normal o diff1 (\t. u t x))) /\
-           (!t. integrable m (\x. Normal (diff1 (\t. u t x) t))) /\
-           (\t. real (integral m (\x. Normal (diff1 (\t. u t x) t))))
-                continuous_on UNIV /\
-           (!k. compact k ==>
-                integral lborel
-                  (\t. integral m (\x. Normal (abs (diff1 (\t. u t x) t)))
-                       * indicator_fn k t) <> PosInf) /\
-           (\(x,t). Normal (diff1 (\t. u t x) t)) IN
-                    Borel_measurable (measurable_space m CROSS borel) ==>
-       !t. ((\t. real (integral m (Normal o u t))) has_vector_derivative
-                 real (integral m (\x. Normal (diff1 (\t. u t x) t)))
-            ) (at t)
+    !m u. sigma_finite_measure_space (m :'a m_space) /\
+         (!t. integrable m (Normal o u t)) /\
+         (!x. x IN m_space m ==> (\t. u t x) differentiable_on UNIV) /\
+         (!x. x IN m_space m ==>
+              integrable lborel (Normal o diff1 (\t. u t x))) /\
+         (!t. integrable m (\x. Normal (diff1 (\t. u t x) t))) /\
+         (\t. real (integral m (\x. Normal (diff1 (\t. u t x) t))))
+              continuous_on UNIV /\
+         (!k. compact k ==>
+              integral lborel
+                (\t. integral m (\x. Normal (abs (diff1 (\t. u t x) t)))
+                     * indicator_fn k t) <> PosInf) /\
+         (\(x,t). Normal (diff1 (\t. u t x) t)) IN
+                  Borel_measurable (measurable_space m CROSS borel)
+      ==> !t. ((\t. real (integral m (Normal o u t))) has_vector_derivative
+                    real (integral m (\x. Normal (diff1 (\t. u t x) t)))) (at t)
 Proof
-    rpt GEN_TAC
- >> REWRITE_TAC [sigma_finite_measure_space_def]
- >> STRIP_TAC
+    REWRITE_TAC [sigma_finite_measure_space_def]
+ >> rpt GEN_TAC >> STRIP_TAC
  >> Q.X_GEN_TAC ‘t0’ >> rw [HAS_VECTOR_DERIVATIVE_ALT]
  (* NOTE: ‘f’ exists since “integrable m (Normal o u t)” *)
  >> qabbrev_tac ‘f = \t. integral m (Normal o u t)’ >> simp []
@@ -7670,6 +7668,29 @@ Proof
       REWRITE_TAC [GSYM ABS_MUL, REAL_ADD_RDISTRIB] \\
       simp [REAL_DIV_RMUL] ]
 QED
+
+(* |- !u. (!t. integrable lborel (Normal o u t)) /\
+          (!x. (\t. u t x) differentiable_on univ(:real)) /\
+          (!x. integrable lborel (Normal o diff1 (\t. u t x))) /\
+          (!t. integrable lborel (\x. Normal (diff1 (\t. u t x) t))) /\
+          (\t. real (integral lborel (\x. Normal (diff1 (\t. u t x) t))))
+               continuous_on univ(:real) /\
+          (!k. compact k ==>
+               integral lborel
+                 (\t. integral lborel
+                        (\x. Normal (abs (diff1 (\t. u t x) t))) *
+                      indicator_fn k t) <> PosInf) /\
+          (\(x,t). Normal (diff1 (\t. u t x) t)) IN
+                   Borel_measurable (borel CROSS borel) ==>
+          !t. ((\t. real (integral lborel (Normal o u t))) has_vector_derivative
+               real (integral lborel (\x. Normal (diff1 (\t. u t x) t))))
+                (at t)
+ *)
+Theorem gauge_differentiable_lemma_revisited =
+        differentiable_lemma_revisited
+     |> ISPEC “lborel”
+     |> SRULE [sigma_finite_measure_space_def, space_lborel, lborel_def,
+               sigma_finite_lborel, measure_space_lborel]
 
 (* ------------------------------------------------------------------------- *)
 (*  Hermite polynomials (probabilist's) [9]                                  *)
