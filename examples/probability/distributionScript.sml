@@ -7713,7 +7713,8 @@ Theorem gauge_differentiable_lemma_revisited :
 Proof
     Q.X_GEN_TAC ‘u’
  >> STRIP_TAC
- >> MP_TAC (Q.SPEC ‘u’ gauge_differentiable_lemma_revisited) >> simp []
+ >> MP_TAC (Q.SPEC ‘u’ gauge_differentiable_lemma_revisited_lemma)
+ >> simp []
  >> DISCH_TAC
  >> CONJ_TAC
  >- (rw [differentiable_on, differentiable_alt_has_vector_derivative,
