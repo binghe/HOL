@@ -4,13 +4,13 @@
 (*                                                                            *)
 (* AUTHORS : 2025  The Australian National University (Chun Tian)             *)
 (* ========================================================================== *)
+
 Theory semi_sensible
 Ancestors
   list pred_set relation topology pair term chap2 chap3 chap4
   horeduction boehm lameta_complete
 Libs
   numLib hurdUtils pred_setLib
-
 
 (* These theorems usually give unexpected results, should be applied manually *)
 val _ = temp_delsimps [
@@ -209,6 +209,41 @@ Proof
  >> rw [lameq_imp_lameta]
 QED
 
+(*---------------------------------------------------------------------------*
+ *  Virtual subterm (vsubterm) of Boehm Trees
+ *---------------------------------------------------------------------------*)
+
+(* vsubterm
+
+   ((vs,y),Ms)   vs::[z_0,z_1,z_2,...]
+       /\
+     /    \      0,   1, .. (j = h - m)
+    0 ...  m-1,  m, m+1, .. h
+                       (([],z_j),[])
+ *)
+Definition vsubterm_def :
+  vsubterm X M     [] r = SOME (M,r) /\
+  vsubterm X M (h::p) r =
+  if solvable M then
+    let M0 = principal_hnf M;
+         n = LAMl_size M0;
+        vs = RNEWS r n X;
+        M1 = principal_hnf (M0 @* MAP VAR vs);
+        Ms = hnf_children M1;
+         m = LENGTH Ms;
+         j = h - m;
+        zs = RNEWS r (n + SUC j) X;
+         z = LAST zs;
+         N = if h < m then EL h Ms else VAR z
+      in
+        vsubterm X N p (SUC r)
+  else
+    NONE
+End
+
+Overload vsubterm' = “\X M p r. FST (THE (vsubterm X M p r))”
+
+(* END *)
 val _ = html_theory "semi_sensible";
 
 (* References:
