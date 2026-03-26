@@ -1,3 +1,5 @@
+;;;; -*- lexical-binding: t -*-
+
 (global-set-key (kbd "C-!") "∀")
 (global-set-key (kbd "C-?") "∃")
 (global-set-key (kbd "C-&") "∧")
@@ -139,11 +141,11 @@
 (define-key hol-unicode-subscript-map "-" "₋")
 
 (define-key hol-unicode-superscript-map "1"
-  (lambda () (interactive) (insert "¹")))
+            (lambda () (interactive) (insert "¹")))
 (define-key hol-unicode-superscript-map "2"
-  (lambda () (interactive) (insert "²")))
+            (lambda () (interactive) (insert "²")))
 (define-key hol-unicode-superscript-map "3"
-  (lambda () (interactive) (insert "³")))
+            (lambda () (interactive) (insert "³")))
 (define-key hol-unicode-superscript-map "4" "⁴")
 (define-key hol-unicode-superscript-map "5" "⁵")
 (define-key hol-unicode-superscript-map "6" "⁶")
@@ -217,7 +219,7 @@
 (define-key hol-unicode-U-map "<" "⊌") ; U+228C called simply "multiset", used in HOL for FUNION
 (define-key hol-unicode-U-map "p" "Υ") ; Up-silon
 
-; parenthesis map - for various forms of parenthesis
+                                        ; parenthesis map - for various forms of parenthesis
 (define-prefix-command 'hol-unicode-lparen-heavy-map)
 (define-prefix-command 'hol-unicode-rparen-heavy-map)
 (define-prefix-command 'hol-unicode-lparen-medium-map)
@@ -251,12 +253,12 @@
 (define-key hol-unicode-lparen-heavy-map (kbd "<") "❰")
 (define-key hol-unicode-rparen-heavy-map (kbd ">") "❱")
 
-; shift map
+                                        ; shift map
 (define-key hol-unicode-shift-map (kbd "a") "≫")
 (define-key hol-unicode-shift-map (kbd "l") "≪")
 (define-key hol-unicode-shift-map (kbd "r") "⋙")
 
-; curly/curvy relational operator map
+                                        ; curly/curvy relational operator map
 (define-key hol-unicode-C-map (kbd "_") "⊆")
 (define-key hol-unicode-C-map (kbd "-") "≃")
 (define-key hol-unicode-C-map (kbd ".") "⪽")
@@ -269,7 +271,7 @@
 (define-key hol-unicode-C-map (kbd "<") "≺")
 (define-key hol-unicode-C-map (kbd "^") "⌢")
 
-; sQuare operators map
+                                        ; sQuare operators map
 (define-key hol-unicode-Q-map (kbd "q") "⊑")
 (define-key hol-unicode-Q-map (kbd "<") "⊏")
 (define-key hol-unicode-Q-map (kbd "i") "⊓")
@@ -281,31 +283,31 @@
 (define-key hol-unicode-Q-map (kbd ".") "⊡")
 
 
-; double quotation marks map
+                                        ; double quotation marks map
 (define-key hol-unicode-dquote-map (kbd "C-M-{") "“")
 (define-key hol-unicode-dquote-map (kbd "C-M-}") "”")
 (define-key hol-unicode-dquote-map (kbd "C-M-<")
-  (lambda () (interactive) (insert "«")))
+            (lambda () (interactive) (insert "«")))
 (define-key hol-unicode-dquote-map (kbd "C-M->")
-  (lambda () (interactive) (insert "»")))
+            (lambda () (interactive) (insert "»")))
 
-; single quotation marks map
+                                        ; single quotation marks map
 (define-key hol-unicode-squote-map (kbd "C-{") "‘")
 (define-key hol-unicode-squote-map (kbd "C-}") "’")
 (define-key hol-unicode-squote-map (kbd "C-<")
-  (lambda () (interactive) (insert "‹")))
+            (lambda () (interactive) (insert "‹")))
 (define-key hol-unicode-squote-map (kbd "C->")
-  (lambda () (interactive) (insert "›")))
+            (lambda () (interactive) (insert "›")))
 
 (define-key hol-unicode-specialalphabet-map (kbd "c")
-  hol-unicode-calligraphic-map)
-; calligraphic upper-case map (note numerous special case exceptions)
-; app (fn (s1,s2,s3) =>
-;        print ("(define-key hol-unicode-calligraphic-map (kbd \"" ^ s1 ^ "\") \"" ^
-;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
-;     (List.tabulate (26, (fn i => (UTF8.chr (i + 65),
-;                                   UTF8.chr (i + 0x1D49C),
-;                                   Int.fmt StringCvt.HEX (i + 0x1D49C)))));
+            hol-unicode-calligraphic-map)
+                                        ; calligraphic upper-case map (note numerous special case exceptions)
+                                        ; app (fn (s1,s2,s3) =>
+                                        ;        print ("(define-key hol-unicode-calligraphic-map (kbd \"" ^ s1 ^ "\") \"" ^
+                                        ;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
+                                        ;     (List.tabulate (26, (fn i => (UTF8.chr (i + 65),
+                                        ;                                   UTF8.chr (i + 0x1D49C),
+                                        ;                                   Int.fmt StringCvt.HEX (i + 0x1D49C)))));
 (define-key hol-unicode-calligraphic-map (kbd "A") "𝒜")  ; U+1D49C
 (define-key hol-unicode-calligraphic-map (kbd "B") "ℬ")  ; U+212C
 (define-key hol-unicode-calligraphic-map (kbd "C") "𝒞")  ; U+1D49E
@@ -332,12 +334,12 @@
 (define-key hol-unicode-calligraphic-map (kbd "X") "𝒳")  ; U+1D4B3
 (define-key hol-unicode-calligraphic-map (kbd "Y") "𝒴")  ; U+1D4B4
 (define-key hol-unicode-calligraphic-map (kbd "Z") "𝒵")  ; U+1D4B5
-; app (fn (s1,s2,s3) =>
-;        print ("(define-key hol-unicode-calligraphic-map (kbd \"" ^ s1 ^ "\") \"" ^
-;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
-;     (List.tabulate (26, (fn i => (UTF8.chr (i + 97),
-;                                   UTF8.chr (i + 0x1D4B6),
-;                                   Int.fmt StringCvt.HEX (i + 0x1D4B6)))));
+                                        ; app (fn (s1,s2,s3) =>
+                                        ;        print ("(define-key hol-unicode-calligraphic-map (kbd \"" ^ s1 ^ "\") \"" ^
+                                        ;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
+                                        ;     (List.tabulate (26, (fn i => (UTF8.chr (i + 97),
+                                        ;                                   UTF8.chr (i + 0x1D4B6),
+                                        ;                                   Int.fmt StringCvt.HEX (i + 0x1D4B6)))));
 (define-key hol-unicode-calligraphic-map (kbd "a") "𝒶")  ; U+1D4B6
 (define-key hol-unicode-calligraphic-map (kbd "b") "𝒷")  ; U+1D4B7
 (define-key hol-unicode-calligraphic-map (kbd "c") "𝒸")  ; U+1D4B8
@@ -368,13 +370,13 @@
 
 
 (define-key hol-unicode-specialalphabet-map (kbd "f") hol-unicode-frak-map)
-; fraktur map
-; app (fn (s1,s2,s3) =>
-;        print ("(define-key hol-unicode-frak-map (kbd \"" ^ s1 ^ "\") \"" ^
-;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
-;     (List.tabulate (26, (fn i => (UTF8.chr (i + 65),
-;                                   UTF8.chr (i + 0x1D56C),
-;                                   Int.fmt StringCvt.HEX (i + 0x1D56C)))));
+                                        ; fraktur map
+                                        ; app (fn (s1,s2,s3) =>
+                                        ;        print ("(define-key hol-unicode-frak-map (kbd \"" ^ s1 ^ "\") \"" ^
+                                        ;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
+                                        ;     (List.tabulate (26, (fn i => (UTF8.chr (i + 65),
+                                        ;                                   UTF8.chr (i + 0x1D56C),
+                                        ;                                   Int.fmt StringCvt.HEX (i + 0x1D56C)))));
 (define-key hol-unicode-frak-map (kbd "A") "𝕬")  ; U+1D56C
 (define-key hol-unicode-frak-map (kbd "B") "𝕭")  ; U+1D56D
 (define-key hol-unicode-frak-map (kbd "C") "𝕮")  ; U+1D56E
@@ -401,12 +403,12 @@
 (define-key hol-unicode-frak-map (kbd "X") "𝖃")  ; U+1D583
 (define-key hol-unicode-frak-map (kbd "Y") "𝖄")  ; U+1D584
 (define-key hol-unicode-frak-map (kbd "Z") "𝖅")  ; U+1D585
-; app (fn (s1,s2,s3) =>
-;        print ("(define-key hol-unicode-frak-map (kbd \"" ^ s1 ^ "\") \"" ^
-;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
-;     (List.tabulate (26, (fn i => (UTF8.chr (i + 97),
-;                                   UTF8.chr (i + 0x1D586),
-;                                   Int.fmt StringCvt.HEX (i + 0x1D586)))));
+                                        ; app (fn (s1,s2,s3) =>
+                                        ;        print ("(define-key hol-unicode-frak-map (kbd \"" ^ s1 ^ "\") \"" ^
+                                        ;               s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
+                                        ;     (List.tabulate (26, (fn i => (UTF8.chr (i + 97),
+                                        ;                                   UTF8.chr (i + 0x1D586),
+                                        ;                                   Int.fmt StringCvt.HEX (i + 0x1D586)))));
 (define-key hol-unicode-frak-map (kbd "a") "𝖆")  ; U+1D586
 (define-key hol-unicode-frak-map (kbd "b") "𝖇")  ; U+1D587
 (define-key hol-unicode-frak-map (kbd "c") "𝖈")  ; U+1D588
@@ -435,15 +437,15 @@
 (define-key hol-unicode-frak-map (kbd "z") "𝖟")  ; U+1D59F
 
 
-; blackboard map
+                                        ; blackboard map
 (define-key hol-unicode-specialalphabet-map (kbd "b") hol-unicode-bboard-map)
-;app (fn (s1,s2,s3) =>
-;       print ("(define-key hol-unicode-bboard-map (kbd \"" ^ s1 ^ "\") \"" ^
-;              s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
-;    (List.tabulate (26, (fn i => (UTF8.chr (i + 65),
-;                                  UTF8.chr (i + 0x1D538),
-;                                  Int.fmt StringCvt.HEX (i + 0x1D538)))))
-; except special cases: C, H, N, P, Q, R and Z
+                                        ;app (fn (s1,s2,s3) =>
+                                        ;       print ("(define-key hol-unicode-bboard-map (kbd \"" ^ s1 ^ "\") \"" ^
+                                        ;              s2 ^ "\")  ; U+" ^ s3 ^ "\n"))
+                                        ;    (List.tabulate (26, (fn i => (UTF8.chr (i + 65),
+                                        ;                                  UTF8.chr (i + 0x1D538),
+                                        ;                                  Int.fmt StringCvt.HEX (i + 0x1D538)))))
+                                        ; except special cases: C, H, N, P, Q, R and Z
 (define-key hol-unicode-bboard-map (kbd "A") "𝔸")  ; U+1D538
 (define-key hol-unicode-bboard-map (kbd "B") "𝔹")  ; U+1D539
 (define-key hol-unicode-bboard-map (kbd "C") "ℂ")  ; U+2102
@@ -470,14 +472,14 @@
 (define-key hol-unicode-bboard-map (kbd "X") "𝕏")  ; U+1D54F
 (define-key hol-unicode-bboard-map (kbd "Y") "𝕐")  ; U+1D550
 (define-key hol-unicode-bboard-map (kbd "Z") "ℤ")  ; U+1D551
-; and numbers
+                                        ; and numbers
 (dotimes (i 10)
   (define-key hol-unicode-bboard-map (kbd (format "%d" i))
-    (char-to-string (+ i #x1d7d8))))
+              (char-to-string (+ i #x1d7d8))))
 
 
 
-; arrow maps
+                                        ; arrow maps
 (define-key hol-unicode-leftarrow-map (kbd "-") "←")
 (define-key hol-unicode-leftarrow-map (kbd "C-<") "↞")
 (define-key hol-unicode-leftarrow-map (kbd "C->") "↔")
@@ -519,3 +521,5 @@
 (define-key hol-unicode-downarrow-map (kbd "C") "↷")
 (define-key hol-unicode-downarrow-map (kbd "N") "↯")
 (define-key hol-unicode-downarrow-map (kbd "w") "⇊")
+
+(provide 'hol-unicode)
