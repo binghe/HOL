@@ -1390,6 +1390,11 @@ Definition second_moments_def:
   second_moments p X n = SIGMA (λi. central_moment p (X i) 2) (count n)
 End
 
+(* |- !p X n.
+        second_moments p X n = SIGMA (\i. variance p (X i)) (count n)
+ *)
+Theorem second_moments_alt = REWRITE_RULE [GSYM variance_def] second_moments_def
+
 Definition third_moments_def:
   third_moments p X n = SIGMA (λi. third_moment p (X i)) (count n)
 End
@@ -6907,16 +6912,41 @@ Proof
  >> METIS_TAC [integrable_finite_integral, prob_space_def]
 QED
 
+(* ------------------------------------------------------------------------- *)
+(*  Lindeberg's condition                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+Definition Lindeberg :
+    Lindeberg p X n e =
+    let D = sqrt (second_moments p X n);
+        M i = expectation p (X i)
+    in
+      1 / second_moments p X n *
+      SIGMA (\i. expectation p
+                  (\w. (X i w - M i) pow 2 *
+                       indicator_fn {w | Normal e * D <= abs (X i w - M i)} w))
+            (count n)
+End
+
+Theorem Lindeberg_def = SIMP_RULE std_ss [LET_DEF, second_moments_alt] Lindeberg
+
+Definition Lindeberg_condition_def :
+    Lindeberg_condition p X <=>
+      !e. 0 < e ==> ((\n. Lindeberg p X (SUC n) e) --> 0) sequentially
+End
+
 val _ = html_theory "central_limit";
 
 (* References:
 
   [1] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [2] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
-  [3] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
-  [4] Qasim, M.: Formalization of Normal Random Variables, Concordia University (2016).
-  [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Edition).
-      World Scientific Publishing Company (2006).
+  [3] Chung, K.L.: A Course in Probability Theory, Third Edition.
+      Academic Press (2001).
+  [4] Qasim, M.: Formalization of Normal Random Variables, Concordia University
+      (2016).
+  [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory,
+      Second Edition. World Scientific Publishing Company (2006).
   [6] Noll, W.: The chain rule for higher derivatives. (1995).
   [7] Lyapunov, A.M.: On a theorem in probability theory. (1900).
       Originally published in Izvestiya Akademii Nauk, series V, 1900, vol. XIII,
