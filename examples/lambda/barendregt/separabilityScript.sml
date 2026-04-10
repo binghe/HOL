@@ -5,10 +5,9 @@
 
 Theory separability
 Ancestors
-  combin arithmetic pred_set list rich_list llist ltree relation
-  topology iterate option nomset basic_swap term appFOLDL chap2
-  chap3 horeduction solvable takahashiS3 head_reduction
-  standardisation boehm
+  combin arithmetic pred_set list rich_list llist ltree relation iterate option
+  nomset basic_swap term appFOLDL chap2 chap3 horeduction head_reduction
+  solvable boehm
 Libs
   hurdUtils tautLib numLib listLib NEWLib reductionEval
   head_reductionLib monadsyntax
@@ -16,10 +15,6 @@ Libs
 (* enable basic monad support *)
 val _ = enable_monadsyntax ();
 val _ = enable_monad "option";
-
-local open set_relationTheory in
-   val rel_to_reln_IS_UNCURRY = rel_to_reln_IS_UNCURRY;
-end
 
 (* These theorems usually give unexpected results, should be applied manually *)
 val _ = temp_delsimps [
@@ -36,13 +31,11 @@ val _ = hide "Y";
 (* some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
-val PRINT_TAC = goalStack.note_tac
-
-(* Disable some conflicting overloads from labelledTermsTheory *)
+(* such re-definitions actually change their priorities *)
 Overload FV  = “supp term_pmact”
 Overload VAR = “term$VAR”
 
-val _ = temp_clear_overloads_on "fEL";
+val _ = temp_clear_overloads_on "fEL"; (* prefer old EL syntax *)
 
 (*---------------------------------------------------------------------------*
  *  Virtual subterm (vsubterm) of Boehm Trees
@@ -55,9 +48,6 @@ val _ = temp_clear_overloads_on "fEL";
      /    \      0,   1, .. (j = h - m)
     0 ...  m-1,  m, m+1, .. h
                        (([],z_j),[])
-
-   NOTE: vsubterm X M p r is equivalent to subterm X M' p r, where M' corresponds
-   to an (possibly) infinite eta-expansion of (Boehm tree of) M, thus M === M'.
  *)
 Definition vsubterm_def :
     vsubterm X M     [] r = SOME (M,r) /\
@@ -81,13 +71,21 @@ End
 
 Overload vsubterm' = “\X M p r. FST (THE (vsubterm X M p r))”
 
-Definition FV_condition_def :
-    FV_condition X M r <=> FINITE X /\ FV M SUBSET X UNION RANK r
-End
+Theorem vsubterm_alt_subterm :
+    !p X M r. subterm X M p r <> NONE ==> vsubterm X M p r = subterm X M p r
+Proof
+    Induct_on ‘p’ >> rw [subterm_def, vsubterm_def]
+QED
 
-Theorem vsubterm_eq_subterm :
-    !X M p r. FV_condition X M r /\ p IN BT_paths M ==>
-              vsubterm X M p r = subterm X M p r
+(* BT_expand_lemma2, ltree_paths_BT_expand' *)
+Theorem vsubterm_expand_lemma :
+    !X p M r B N m.
+       FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M /\
+       p IN ltree_paths (BT' X M r) /\
+       BT_expand X (BT' X M r) p r = B /\ N = BT_to_term B /\
+       ltree_branching (BT' X M r) p = SOME m
+      ==>
+       vsubterm X M (SNOC m p) r = subterm X N (SNOC m p) r
 Proof
     cheat
 QED
