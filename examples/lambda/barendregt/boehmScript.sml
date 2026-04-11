@@ -6093,8 +6093,7 @@ Theorem BT_expand_lemma1 :
        BT_expand X (BT' X M r) p r = B /\ N = BT_to_term B ==>
        compat_closure eta N M /\ BT' X N r = B
 Proof
-    rpt GEN_TAC
- >> STRIP_TAC
+    rpt GEN_TAC >> STRIP_TAC
  >> simp []
  >> Suff ‘!R M r. (?p B. FV M SUBSET X UNION RANK r /\ bnf M /\
                          p IN ltree_paths (BT' X M r) /\
@@ -6846,8 +6845,7 @@ Definition Boehm_construction_def :
         vs0   = NEWS (n_max + SUC d_max + k) (X UNION X');
         vs    = TAKE n_max vs0;
         xs    = DROP n_max vs0;
-        M  i  = EL i Ms;
-        M0 i  = principal_hnf (M i);
+        M0 i  = principal_hnf (EL i Ms);
         M1 i  = principal_hnf (M0 i @* MAP VAR vs);
         y  i  = hnf_headvar (M1 i);
         P  i  = permutator (d_max + i);

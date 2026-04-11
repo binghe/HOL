@@ -5,9 +5,9 @@
 
 Theory separability
 Ancestors
-  combin arithmetic pred_set list rich_list llist ltree relation iterate option
-  nomset basic_swap term appFOLDL chap2 chap3 horeduction head_reduction
-  solvable boehm
+  combin option arithmetic pred_set list rich_list llist ltree relation iterate
+  topology nomset basic_swap term appFOLDL chap2 chap3 chap4 horeduction
+  head_reduction standardisation solvable boehm lameta_complete
 Libs
   hurdUtils tautLib numLib listLib NEWLib reductionEval
   head_reductionLib monadsyntax
@@ -35,7 +35,7 @@ val _ = set_trace "Goalstack.print_goal_at_top" 0;
 Overload FV  = “supp term_pmact”
 Overload VAR = “term$VAR”
 
-val _ = temp_clear_overloads_on "fEL"; (* prefer old EL syntax *)
+val _ = temp_clear_overloads_on "fEL"; (* use old EL syntax *)
 
 (*---------------------------------------------------------------------------*
  *  Virtual subterm (vsubterm) of Boehm Trees
@@ -70,6 +70,15 @@ Definition vsubterm_def :
 End
 
 Overload vsubterm' = “\X M p r. FST (THE (vsubterm X M p r))”
+
+(* |- vsubterm X M [] r = SOME (M,r) *)
+Theorem vsubterm_NIL[simp] = SPEC_ALL (cj 1 vsubterm_def)
+
+Theorem vsubterm_NIL'[simp] :
+    vsubterm' X M [] r = M
+Proof
+    rw [vsubterm_NIL]
+QED
 
 Theorem vsubterm_alt_subterm :
     !p X M r. subterm X M p r <> NONE ==> vsubterm X M p r = subterm X M p r

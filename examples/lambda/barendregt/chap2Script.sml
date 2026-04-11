@@ -1691,72 +1691,37 @@ Proof
  >> rw [Abbr ‘y’]
 QED
 
-(* TODO: rework this proof by (the new) selector_alt *)
 Theorem selector_thm :
     !i n Ns. i < n /\ LENGTH Ns = n ==> selector i n @* Ns == EL i Ns
 Proof
-    RW_TAC std_ss [selector_def]
- >> qabbrev_tac ‘n = LENGTH Ns’
- >> qabbrev_tac ‘Z = GENLIST n2s n’
- >> ‘ALL_DISTINCT Z /\ LENGTH Z = n’ by rw [Abbr ‘Z’, ALL_DISTINCT_GENLIST]
- >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> qabbrev_tac ‘z = n2s i’
- >> Know ‘MEM z Z’
- >- (rw [Abbr ‘Z’, Abbr ‘z’, MEM_GENLIST] \\
-     Q.EXISTS_TAC ‘i’ >> art [])
- >> DISCH_TAC
- (* preparing for LAMl_ALPHA_ssub *)
- >> qabbrev_tac
-     ‘Y = NEWS n (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
- >> Know ‘FINITE (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
- >- (rw [] >> rw [FINITE_FV])
- >> DISCH_TAC
- >> Know ‘ALL_DISTINCT Y /\
-          DISJOINT (set Y) (set Z UNION (BIGUNION (IMAGE FV (set Ns)))) /\
-          LENGTH Y = n’
- >- (ASM_SIMP_TAC std_ss [NEWS_def, Abbr ‘Y’])
- >> rw []
- (* applying LAMl_ALPHA_ssub *)
- >> Know ‘LAMl Z (VAR z) = LAMl Y ((FEMPTY |++ ZIP (Z,MAP VAR Y)) ' (VAR z))’
- >- (MATCH_MP_TAC LAMl_ALPHA_ssub >> rw [] \\
-     Q.PAT_X_ASSUM ‘DISJOINT (set Z) (set Y)’ MP_TAC \\
-     rw [DISJOINT_ALT])
- >> Rewr'
- >> ‘Y <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> REWRITE_TAC [GSYM fromPairs_def]
- >> qabbrev_tac ‘fm = fromPairs Z (MAP VAR Y)’
- >> ‘FDOM fm = set Z’ by rw [FDOM_fromPairs, Abbr ‘fm’]
- >> Know ‘fm ' (VAR z) = EL i (MAP VAR Y)’
- >- (rw [ssub_thm] \\
-     Know ‘z = EL i Z’
-     >- (simp [Abbr ‘Z’, Abbr ‘z’] \\
-         fs [LENGTH_GENLIST, EL_GENLIST]) >> Rewr' \\
-     qunabbrev_tac ‘fm’ \\
-     MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw [])
- >> Rewr'
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set Ns))’
+ >> ‘FINITE X’ by rw [Abbr ‘X’]
+ >> MP_TAC (Q.SPECL [‘X’, ‘i’, ‘n’] selector_alt)
+ >> RW_TAC std_ss []
+ >> POP_ORW
+ >> ‘VAR (EL i vs) = EL i (MAP VAR vs)’ by simp [EL_MAP]
+ >> POP_ORW
  (* stage work *)
- >> qabbrev_tac ‘t = EL i (MAP VAR Y)’
- >> Suff ‘EL i Ns = (FEMPTY |++ ZIP (Y,Ns)) ' t’
+ >> qabbrev_tac ‘t = EL i (MAP VAR vs)’
+ >> Suff ‘EL i Ns = (FEMPTY |++ ZIP (vs,Ns)) ' t’
  >- (Rewr' \\
      MATCH_MP_TAC lameq_LAMl_appstar_ssub >> rw [] \\
      ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
+     MATCH_MP_TAC DISJOINT_SUBSET' \\
+     Q.EXISTS_TAC ‘X’ >> art [] \\
+     rw [SUBSET_DEF, Abbr ‘X’, IN_BIGUNION_IMAGE] \\
      Q.EXISTS_TAC ‘x’ >> art [])
- (* cleanup ‘fm’ *)
- >> Q.PAT_X_ASSUM ‘FDOM fm = set Z’ K_TAC
- >> qunabbrev_tac ‘fm’
- (* stage work *)
  >> REWRITE_TAC [Once EQ_SYM_EQ, GSYM fromPairs_def]
- >> qabbrev_tac ‘fm = fromPairs Y Ns’
- >> ‘FDOM fm = set Y’ by rw [Abbr ‘fm’, FDOM_fromPairs]
+ >> qabbrev_tac ‘fm = fromPairs vs Ns’
+ >> ‘FDOM fm = set vs’ by rw [Abbr ‘fm’, FDOM_fromPairs]
  >> simp [Abbr ‘t’, EL_MAP]
- >> Know ‘MEM (EL i Y) Y’
- >- (rw [MEM_EL] \\
-     Q.EXISTS_TAC ‘i’ >> rw [])
+ >> Know ‘MEM (EL i vs) vs’
+ >- (MATCH_MP_TAC EL_MEM >> art [])
  >> Rewr
- >> Q.PAT_X_ASSUM ‘FDOM fm = set Y’ K_TAC
+ >> Q.PAT_X_ASSUM ‘FDOM fm = set vs’ K_TAC
  >> simp [Abbr ‘fm’]
- >> MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []
+ >> MATCH_MP_TAC fromPairs_FAPPLY_EL >> art []
 QED
 
 (* ----------------------------------------------------------------------
