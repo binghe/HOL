@@ -86,17 +86,31 @@ Proof
     Induct_on ‘p’ >> rw [subterm_def, vsubterm_def]
 QED
 
-(* BT_expand_lemma2, ltree_paths_BT_expand' *)
 Theorem vsubterm_expand_lemma :
-    !X p M r B N m.
-       FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M /\
+    !X M p r B N m.
+       FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M /\
        p IN ltree_paths (BT' X M r) /\
-       BT_expand X (BT' X M r) p r = B /\ N = BT_to_term B /\
-       ltree_branching (BT' X M r) p = SOME m
-      ==>
+       ltree_branching (BT' X M r) p = SOME m /\
+       BT_expand X (BT' X M r) p r = B /\ N = BT_to_term B ==>
        vsubterm X M (SNOC m p) r = subterm X N (SNOC m p) r
 Proof
-    cheat
+    rpt GEN_TAC >> STRIP_TAC
+ >> simp []
+ >> Suff ‘!R M p r m. (?B. FV M SUBSET X UNION RANK r /\ bnf M /\
+                           p IN ltree_paths (BT' X M r) /\
+                           ltree_branching (BT' X M r) p = SOME m /\
+                           B = BT_expand X (BT' X M r) p r /\
+                           R = to_rose B) ==>
+                      vsubterm X M (SNOC m p) r =
+                       subterm X (rose_to_term R) (SNOC m p) r’
+ >- (DISCH_THEN MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘B’ >> art [])
+ >> Q.PAT_X_ASSUM ‘FINITE X’ MP_TAC
+ >> KILL_TAC >> DISCH_TAC
+ (* applying induction on rose tree *)
+ >> HO_MATCH_MP_TAC rose_tree_induction
+ >> NTAC 2 (rpt GEN_TAC >> STRIP_TAC)
+ >> cheat
 QED
 
 val _ = html_theory "separability";
