@@ -6074,6 +6074,18 @@ Proof
  >> MATCH_MP_TAC BT_ltree_el_cases >> art []
 QED
 
+Theorem ltree_finite_BT_expand' :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M /\
+              p IN ltree_paths (BT' X M r) ==>
+              ltree_finite (BT_expand X (BT' X M r) p r)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC ltree_finite_BT_expand_lemma
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC ltree_finite_BT_has_bnf >> art [])
+ >> MATCH_MP_TAC BT_ltree_el_cases' >> art []
+QED
+
 (* NOTE: This lemma is not suitable for induction, because (in general),
    if “compat_closure eta N M” and M is bnf, N may have beta-redexes due
    to eta-expansion. Thus, in general we can only say “has_bnf N” instead
@@ -6094,7 +6106,7 @@ Theorem BT_expand_lemma1 :
        compat_closure eta N M /\ BT' X N r = B
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> simp []
+ >> ASM_REWRITE_TAC []
  >> Suff ‘!R M r. (?p B. FV M SUBSET X UNION RANK r /\ bnf M /\
                          p IN ltree_paths (BT' X M r) /\
                          B = BT_expand X (BT' X M r) p r /\ R = to_rose B) ==>
@@ -6115,12 +6127,12 @@ Proof
  >> KILL_TAC >> DISCH_TAC
  (* applying induction on rose tree *)
  >> HO_MATCH_MP_TAC rose_tree_induction
- >> rpt GEN_TAC >> STRIP_TAC
- >> rpt GEN_TAC >> STRIP_TAC
+ >> NTAC 2 (rpt GEN_TAC >> STRIP_TAC)
  >> Q.PAT_X_ASSUM ‘Rose a ts = _’ (MP_TAC o SYM)
  >> POP_ORW
  >> DISCH_THEN (MP_TAC o AP_TERM “from_rose :BT_node rose_tree -> boehm_tree”)
  >> simp [to_rose_def, ltree_finite_BT_expand]
+ (* stage work *)
  >> simp [from_rose_def]
  >> DISCH_TAC
  >> Q_TAC (UNBETA_TAC [rose_to_term_def, Once rose_reduce_def])

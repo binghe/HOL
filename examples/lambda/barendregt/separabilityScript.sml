@@ -86,6 +86,7 @@ Proof
     Induct_on ‘p’ >> rw [subterm_def, vsubterm_def]
 QED
 
+(* NOTE: BT_to_term B = rose_to_term (to_rose B) *)
 Theorem vsubterm_expand_lemma :
     !X M p r B N m.
        FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M /\
@@ -95,7 +96,7 @@ Theorem vsubterm_expand_lemma :
        vsubterm X M (SNOC m p) r = subterm X N (SNOC m p) r
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> simp []
+ >> ASM_REWRITE_TAC []
  >> Suff ‘!R M p r m. (?B. FV M SUBSET X UNION RANK r /\ bnf M /\
                            p IN ltree_paths (BT' X M r) /\
                            ltree_branching (BT' X M r) p = SOME m /\
