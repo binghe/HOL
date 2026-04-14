@@ -344,67 +344,112 @@ end
 
 open ParseDatatype;
 
-val free_tyname  = "''free";
-val bound_tyname = "''bound";
-
 (*
-val q = ‘term = VAR ''free | APP term term | LAM ''bound term’;
+val q = ‘term = VAR 'free | APP term term | LAM 'bound term’;
 val asts = ParseDatatype.hparse (type_grammar()) q;
    [("term",
      Constructors
-      [("VAR", [dVartype "''free"]),
+      [("VAR", [dVartype "'free"]),
        ("APP",
         [dTyop {Args = [], Thy = NONE, Tyop = "term"},
          dTyop {Args = [], Thy = NONE, Tyop = "term"}]),
        ("LAM",
-        [dVartype "''bound", dTyop {Args = [], Thy = NONE, Tyop = "term"}])])]:
-   AST list
+        [dVartype "'bound", dTyop {Args = [], Thy = NONE, Tyop = "term"}])])]
 
-val q = ‘cterm = VAR ''free
-               | APP term term
-               | LAM ''bound term
-               | CONST 'a ’;
+val q = ‘cterm = VAR 'free | APP cterm cterm | LAM 'bound cterm | CONST 'a’;
 val asts = ParseDatatype.hparse (type_grammar()) q;
    [("cterm",
      Constructors
-      [("VAR", [dVartype "''free"]),
+      [("VAR", [dVartype "'free"]),
        ("APP",
         [dTyop {Args = [], Thy = SOME "term", Tyop = "term"},
          dTyop {Args = [], Thy = SOME "term", Tyop = "term"}]),
        ("LAM",
-        [dVartype "''bound",
+        [dVartype "'bound",
          dTyop {Args = [], Thy = SOME "term", Tyop = "term"}]),
-       ("CONST", [dVartype "'a"])])]: AST list
+       ("CONST", [dVartype "'a"])])]
 
-val q   = ‘pi   = Nil                       (* 0 *)
+val q = ‘lterm = VAR 'free
+               | APP lterm lterm
+               | LAM 'bound lterm
+               | LAMi num 'bound lterm lterm’;
+val asts = ParseDatatype.hparse (type_grammar()) q;
+   [("lterm",
+     Constructors
+      [("VAR", [dVartype "'free"]),
+       ("APP",
+        [dTyop {Args = [], Thy = NONE, Tyop = "lterm"},
+         dTyop {Args = [], Thy = NONE, Tyop = "lterm"}]),
+       ("LAM",
+        [dVartype "'bound", dTyop {Args = [], Thy = NONE, Tyop = "lterm"}]),
+       ("LAMi",
+        [dTyop {Args = [], Thy = SOME "num", Tyop = "num"},
+         dVartype "'bound", dTyop {Args = [], Thy = NONE, Tyop = "lterm"},
+         dTyop {Args = [], Thy = NONE, Tyop = "lterm"}])])]
+
+val q =  ‘CCS = nil
+              | var 'free
+              | prefix ('a Action) CCS
+              | sum CCS CCS
+              | par CCS CCS
+              | restr ('a Label set) CCS
+              | relab CCS ('a Relabeling)
+              | rec 'bound CCS’;
+val asts = ParseDatatype.hparse (type_grammar()) q;
+   [("CCS",
+     Constructors
+      [("nil", []), ("var", [dVartype "'free"]),
+       ("prefix",
+        [dTyop {Args = [dVartype "'a"], Thy = NONE, Tyop = "Action"},
+         dTyop {Args = [], Thy = NONE, Tyop = "CCS"}]),
+       ("sum",
+        [dTyop {Args = [], Thy = NONE, Tyop = "CCS"},
+         dTyop {Args = [], Thy = NONE, Tyop = "CCS"}]),
+       ("par",
+        [dTyop {Args = [], Thy = NONE, Tyop = "CCS"},
+         dTyop {Args = [], Thy = NONE, Tyop = "CCS"}]),
+       ("restr",
+        [dTyop
+          {Args =
+           [dTyop {Args = [dVartype "'a"], Thy = NONE, Tyop = "Label"},
+            dTyop {Args = [], Thy = SOME "min", Tyop = "bool"}], Thy =
+           SOME "min", Tyop = "fun"},
+         dTyop {Args = [], Thy = NONE, Tyop = "CCS"}]),
+       ("relab",
+        [dTyop {Args = [], Thy = NONE, Tyop = "CCS"},
+         dTyop {Args = [dVartype "'a"], Thy = NONE, Tyop = "Relabeling"}]),
+       ("rec",
+        [dVartype "'bound", dTyop {Args = [], Thy = NONE, Tyop = "CCS"}])])]
+
+  val q = ‘pi   = Nil                       (* 0 *)
                 | Tau pi                    (* tau.P *)
-                | Input ''free ''bound pi   (* a(x).P *)
-                | Output ''free ''free pi   (* {a}b.P *)
-                | Match ''free ''free pi    (* [a == b] P *)
-                | Mismatch ''free ''free pi (* [a <> b] P *)
+                | Input 'free 'bound pi     (* a(x).P *)
+                | Output 'free 'free pi     (* {a}b.P *)
+                | Match 'free 'free pi      (* [a == b] P *)
+                | Mismatch 'free 'free pi   (* [a <> b] P *)
                 | Sum pi pi                 (* P + Q *)
                 | Par pi pi                 (* P | Q *)
-                | Res ''bound pi            (* nu x. P *) ;
+                | Res 'bound pi             (* nu x. P *) ;
 
        residual = TauR pi
-                | InputS ''free ''bound pi      (* Input *)
-                | BoundOutput ''free ''bound pi (* Bound output *)
-                | FreeOutput ''free ''free pi   (* Free output *)’;
-val asts = ParseDatatype.hparse (type_grammar()) q;
+                | InputS 'free 'bound pi      (* Input *)
+                | BoundOutput 'free 'bound pi (* Bound output *)
+                | FreeOutput 'free 'free pi   (* Free output *)’;
+  val asts = ParseDatatype.hparse (type_grammar()) q;
    [("pi",
      Constructors
       [("Nil", []), ("Tau", [dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("Input",
-        [dVartype "''free", dVartype "''bound",
+        [dVartype "'free", dVartype "'bound",
          dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("Output",
-        [dVartype "''free", dVartype "''free",
+        [dVartype "'free", dVartype "'free",
          dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("Match",
-        [dVartype "''free", dVartype "''free",
+        [dVartype "'free", dVartype "'free",
          dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("Mismatch",
-        [dVartype "''free", dVartype "''free",
+        [dVartype "'free", dVartype "'free",
          dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("Sum",
         [dTyop {Args = [], Thy = NONE, Tyop = "pi"},
@@ -413,62 +458,119 @@ val asts = ParseDatatype.hparse (type_grammar()) q;
         [dTyop {Args = [], Thy = NONE, Tyop = "pi"},
          dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("Res",
-        [dVartype "''bound", dTyop {Args = [], Thy = NONE, Tyop = "pi"}])]),
+        [dVartype "'bound", dTyop {Args = [], Thy = NONE, Tyop = "pi"}])]),
     ("residual",
      Constructors
       [("TauR", [dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("InputS",
-        [dVartype "''free", dVartype "''bound",
+        [dVartype "'free", dVartype "'bound",
          dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("BoundOutput",
-        [dVartype "''free", dVartype "''bound",
+        [dVartype "'free", dVartype "'bound",
          dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
        ("FreeOutput",
-        [dVartype "''free", dVartype "''free",
-         dTyop {Args = [], Thy = NONE, Tyop = "pi"}])])]: AST list
+        [dVartype "'free", dVartype "'free",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}])])]
  *)
 
-fun parse_datatype q = ParseDatatype.hparse (type_grammar()) q;
+fun parse_datatype q = hparse (type_grammar()) q;
 
 (* ["pi", "residual"] *)
 fun type_names (asts :AST list) = List.map fst asts;
 
 (* ["Nil", "Tau", "Input", "Output", "Match", "Mismatch", "Sum", "Par",
     "Res", "TauR", "InputS", "BoundOutput", "FreeOutput"] *)
-fun constructors (asts :AST list) =
+fun constructors_and_types (asts :AST list) =
     List.concat (List.map (fn (_,df) =>
                               case df of
-                                  Constructors cs => map fst cs
+                                  Constructors cs => cs
                                 | Record _ => []) asts);
+
+fun constructors (asts :AST list) =
+    List.map fst (constructors_and_types asts);
+
+val free_tyname  = ref "'free";
+val bound_tyname = ref "'bound";
+
+(* This variant of pretypeToType returns only external types *)
+fun pretypeToType1 pty =
+  case pty of
+    dVartype s => if s = !free_tyname orelse s = !bound_tyname then
+                      NONE
+                  else
+                      SOME (Type.mk_vartype s)
+  | dTyop {Tyop = s, Thy, Args} => let
+    in
+      case Thy of
+        NONE => NONE
+      | SOME t => SOME (Type.mk_thy_type{Tyop = s, Thy = t,
+                                         Args = map pretypeToType Args})
+    end
+  | dAQ pty => SOME pty;
+
+fun constructor_types (asts) =
+    List.concat (List.map snd (constructors_and_types asts));
+
+fun external_types (asts) =
+    List.map Option.valOf
+             (List.filter Option.isSome
+                          (List.map pretypeToType1 (constructor_types asts)));
+
+(* no leading ":" but with parenthesis *)
+fun type_to_string1 ty =
+    let val s = type_to_string ty;
+        val n = String.size s;
+    in
+        "(" ^ substring (s,1,n-1) ^ ")"
+    end;
+
+val external_type_vars = type_varsl o external_types;
 
 (* This function generates a quotation and call it by Datatype:
 Datatype:
   repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
           | rPar | rRes | rTauR | rInputS | rBoundOutput | rFreeOutput
 End
+Datatype:
+  crep = cvar
+       | cprefix ('a Action) | csum | cpar
+       | crestr ('a Label set)
+       | crelab ('a Relabeling)
+       | crec
+End
  *)
-fun define_repcode prefix (asts :AST list) = let
-  val cs = constructors asts;
-  val rcs = map (fn s => prefix ^ s) cs;
+val repcode = ref "repcode";
+val rprefix = ref "r";
+
+fun repcode_pair (n,df) =
+    (!rprefix ^ n,
+     List.map Option.valOf
+              (List.filter Option.isSome (List.map pretypeToType1 df)));
+
+fun repcode_line (n,df) =
+    [QUOTE n] @ (List.map (QUOTE o type_to_string1) df);
+
+fun define_repcode (asts :AST list) = let
+  val lines = List.map repcode_pair (constructors_and_types asts);
   val tynames = type_names asts;
   val tyname0 = hd tynames;
-  val repcode = tyname0 ^ "_repcode";
-  val dtype = List.concat
-                [[QUOTE repcode], ‘=’, [QUOTE (hd rcs)],
-                 List.concat
-                   (List.map (fn s => List.concat [‘|’, [QUOTE s]]) (tl rcs))];
+  val dtype0 = [QUOTE (!repcode)] @ ‘=’ @ repcode_line (hd lines);
+  val dtype1 = dtype0 @
+               List.concat
+                   (List.map (fn s => List.concat [‘|’, repcode_line s])
+                             (tl lines));
+  val types = external_type_vars asts;
 in
-    (Datatype dtype; repcode)
+    (Datatype dtype1; mk_type (!repcode,types))
 end;
 
 (* Step 1: parse datatype quotation
-   Step 2: define repcode (datatype)
+   Step 2: define repcode (intermediate datatype)
  *)
-fun Nominal_datatype q = let
+fun nominal_datatype q = let
   val asts = parse_datatype q;
   val tynames = type_names asts;
-  val repcode = define_repcode "r" asts;
-  val rep_t = mk_type (repcode,[]);
+  val rep_t = define_repcode asts;
 in
     {tynames = tynames, rep_t = rep_t}
 end;

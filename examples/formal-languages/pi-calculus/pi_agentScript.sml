@@ -38,21 +38,21 @@ Libs
    NOTE: Replication ("!") is not needed so far, but can be supported later.
    ---------------------------------------------------------------------- *)
 
-val {tynames, rep_t} = Nominal_datatype
-          ‘pi   = Nil                       (* 0 *)
-                | Tau pi                    (* tau.P *)
-                | Input ''free ''bound pi   (* a(x).P *)
-                | Output ''free ''free pi   (* {a}b.P *)
-                | Match ''free ''free pi    (* [a == b] P *)
-                | Mismatch ''free ''free pi (* [a <> b] P *)
-                | Sum pi pi                 (* P + Q *)
-                | Par pi pi                 (* P | Q *)
-                | Res ''bound pi            (* nu x. P *)
+val {tynames, rep_t} = nominal_datatype
+          ‘pi   = Nil                         (* 0 *)
+                | Tau pi                      (* tau.P *)
+                | Input 'free 'bound pi       (* a(x).P *)
+                | Output 'free 'free pi       (* {a}b.P *)
+                | Match 'free 'free pi        (* [a == b] P *)
+                | Mismatch 'free 'free pi     (* [a <> b] P *)
+                | Sum pi pi                   (* P + Q *)
+                | Par pi pi                   (* P | Q *)
+                | Res 'bound pi               (* nu x. P *)
                 ;
-       residual = TauR pi
-                | InputS ''free ''bound pi      (* Input *)
-                | BoundOutput ''free ''bound pi (* Bound output *)
-                | FreeOutput ''free ''free pi   (* Free output *)’;
+       residual = TauR pi                     (* tau.P *)
+                | InputS 'free 'bound pi      (* a(x).P *)
+                | BoundOutput 'free 'bound pi (* a{x}.P *)
+                | FreeOutput 'free 'free pi   (* {a}b.P *)’;
 
 val tyname1 = List.nth (tynames,0);
 val tyname2 = List.nth (tynames,1);
@@ -1041,7 +1041,7 @@ val tlf =
 
 Overload TLF = tlf
 
-val FN = mk_var("FN", “:pi_repcode gterm -> 'q -> 'r”)
+val FN = mk_var("FN", “:repcode gterm -> 'q -> 'r”)
 val fn1_def_t = “fn1 = λp. ^FN (pi_REP p)”
 val fn2_def_t = “fn2 = λr. ^FN (residual_REP r)”
 
@@ -1071,7 +1071,7 @@ fun case1 (tm_def, repabs, defs) =
             asm_simp_tac bool_ss [GLAM_NIL_ELIM] >> AP_TERM_TAC >>
             SYM_TAC >> MATCH_MP_TAC repabs >>
             simp_tac list_ss [genind_GLAM_eqn,
-                              TypeBase.distinct_of “:pi_repcode”,
+                              TypeBase.distinct_of “:repcode”,
                               LIST_REL_NIL, LIST_REL_CONS1, PULL_EXISTS,
                               CONS_11, genind_term_REP1, genind_term_REP2]
           val goal =

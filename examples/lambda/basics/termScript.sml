@@ -16,7 +16,7 @@ Libs
 val _ = set_fixity "=" (Infix(NONASSOC, 450))
 
 val {tynames, ...} =
-    Nominal_datatype ‘term = VAR ''free | APP term term | LAM ''bound term’;
+    nominal_datatype ‘term = VAR ''free | APP term term | LAM ''bound term’;
 
 val tyname = List.hd tynames;
 
