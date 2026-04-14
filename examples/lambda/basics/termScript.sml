@@ -5,6 +5,7 @@
 (* AUTHORS : 2005-2011 Michael Norrish                                        *)
 (*         : 2023-2024 Michael Norrish and Chun Tian                          *)
 (* ========================================================================== *)
+
 Theory term
 Ancestors
   arithmetic pred_set list finite_map relation pair rich_list
@@ -12,10 +13,12 @@ Ancestors
 Libs
   boolSimps hurdUtils binderLib nomdatatype
 
-
 val _ = set_fixity "=" (Infix(NONASSOC, 450))
 
-val tyname = "term"
+val {tynames, ...} =
+    Nominal_datatype ‘term = VAR ''free | APP term term | LAM ''bound term’;
+
+val tyname = List.hd tynames;
 
 (* d ≈ var + app + lam *)
 val lp = “(λn lfvs (d:unit + unit + unit) tns uns.

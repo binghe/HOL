@@ -303,13 +303,12 @@ End
 (* !labl labl'.
      (RELAB labl = RELAB labl') <=> (Apply_Relab labl = Apply_Relab labl')
  *)
-val APPLY_RELAB_THM = save_thm (
-   "APPLY_RELAB_THM",
+Theorem APPLY_RELAB_THM =
     Q.GENL [`labl`, `labl'`]
       (REWRITE_RULE [GSYM RELAB_def]
         (MATCH_MP (MATCH_MP ABS_Relabeling_one_one
                             (Q.SPEC `labl` IS_RELABELING))
-                  (Q.SPEC `labl` IS_RELABELING))));
+                  (Q.SPEC `labl` IS_RELABELING)))
 
 (******************************************************************************)
 (*             Syntax of pure CCS (general formalization)                     *)
@@ -318,13 +317,13 @@ val APPLY_RELAB_THM = save_thm (
 (* The nominal datatype with alpha conversion on recursion variables
 Nominal_datatype :
           CCS = nil
-              | var name
+              | var ''free
               | prefix ('a Action) CCS
               | sum CCS CCS
               | par CCS CCS
               | restr ('a Label set) CCS
               | relab CCS ('a Relabeling)
-              | rec ''name CCS
+              | rec ''bound CCS
 End
  *)
 

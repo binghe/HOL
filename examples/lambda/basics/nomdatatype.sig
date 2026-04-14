@@ -47,4 +47,8 @@ sig
                            thm -> thm
   val defined_const : thm -> term
 
+  val Nominal_datatype : Type.hol_type Portable.quotation ->
+                        {tynames :string list,
+                         rep_t :hol_type}
+
 end

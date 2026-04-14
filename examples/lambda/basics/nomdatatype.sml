@@ -3,6 +3,7 @@
 (* TITLE   : Nominal datatype package                                         *)
 (*                                                                            *)
 (* AUTHORS : 2005-2011 Michael Norrish                                        *)
+(*           2026      Chun Tian                                              *)
 (* ========================================================================== *)
 
 structure nomdatatype :> nomdatatype =
@@ -336,5 +337,140 @@ in
   {term_REP_tpm = term_REP_tpm, tpm_thm = tpm_thm, t_pmact_t = t_pmact_t,
    tpm_t = tpm_t}
 end
+
+(* ----------------------------------------------------------------------
+    The "Nominal_datatype" API
+   ---------------------------------------------------------------------- *)
+
+open ParseDatatype;
+
+val free_tyname  = "''free";
+val bound_tyname = "''bound";
+
+(*
+val q = ‘term = VAR ''free | APP term term | LAM ''bound term’;
+val asts = ParseDatatype.hparse (type_grammar()) q;
+   [("term",
+     Constructors
+      [("VAR", [dVartype "''free"]),
+       ("APP",
+        [dTyop {Args = [], Thy = NONE, Tyop = "term"},
+         dTyop {Args = [], Thy = NONE, Tyop = "term"}]),
+       ("LAM",
+        [dVartype "''bound", dTyop {Args = [], Thy = NONE, Tyop = "term"}])])]:
+   AST list
+
+val q = ‘cterm = VAR ''free
+               | APP term term
+               | LAM ''bound term
+               | CONST 'a ’;
+val asts = ParseDatatype.hparse (type_grammar()) q;
+   [("cterm",
+     Constructors
+      [("VAR", [dVartype "''free"]),
+       ("APP",
+        [dTyop {Args = [], Thy = SOME "term", Tyop = "term"},
+         dTyop {Args = [], Thy = SOME "term", Tyop = "term"}]),
+       ("LAM",
+        [dVartype "''bound",
+         dTyop {Args = [], Thy = SOME "term", Tyop = "term"}]),
+       ("CONST", [dVartype "'a"])])]: AST list
+
+val q   = ‘pi   = Nil                       (* 0 *)
+                | Tau pi                    (* tau.P *)
+                | Input ''free ''bound pi   (* a(x).P *)
+                | Output ''free ''free pi   (* {a}b.P *)
+                | Match ''free ''free pi    (* [a == b] P *)
+                | Mismatch ''free ''free pi (* [a <> b] P *)
+                | Sum pi pi                 (* P + Q *)
+                | Par pi pi                 (* P | Q *)
+                | Res ''bound pi            (* nu x. P *) ;
+
+       residual = TauR pi
+                | InputS ''free ''bound pi      (* Input *)
+                | BoundOutput ''free ''bound pi (* Bound output *)
+                | FreeOutput ''free ''free pi   (* Free output *)’;
+val asts = ParseDatatype.hparse (type_grammar()) q;
+   [("pi",
+     Constructors
+      [("Nil", []), ("Tau", [dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("Input",
+        [dVartype "''free", dVartype "''bound",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("Output",
+        [dVartype "''free", dVartype "''free",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("Match",
+        [dVartype "''free", dVartype "''free",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("Mismatch",
+        [dVartype "''free", dVartype "''free",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("Sum",
+        [dTyop {Args = [], Thy = NONE, Tyop = "pi"},
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("Par",
+        [dTyop {Args = [], Thy = NONE, Tyop = "pi"},
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("Res",
+        [dVartype "''bound", dTyop {Args = [], Thy = NONE, Tyop = "pi"}])]),
+    ("residual",
+     Constructors
+      [("TauR", [dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("InputS",
+        [dVartype "''free", dVartype "''bound",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("BoundOutput",
+        [dVartype "''free", dVartype "''bound",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}]),
+       ("FreeOutput",
+        [dVartype "''free", dVartype "''free",
+         dTyop {Args = [], Thy = NONE, Tyop = "pi"}])])]: AST list
+ *)
+
+fun parse_datatype q = ParseDatatype.hparse (type_grammar()) q;
+
+(* ["pi", "residual"] *)
+fun type_names (asts :AST list) = List.map fst asts;
+
+(* ["Nil", "Tau", "Input", "Output", "Match", "Mismatch", "Sum", "Par",
+    "Res", "TauR", "InputS", "BoundOutput", "FreeOutput"] *)
+fun constructors (asts :AST list) =
+    List.concat (List.map (fn (_,df) =>
+                              case df of
+                                  Constructors cs => map fst cs
+                                | Record _ => []) asts);
+
+(* This function generates a quotation and call it by Datatype:
+Datatype:
+  repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
+          | rPar | rRes | rTauR | rInputS | rBoundOutput | rFreeOutput
+End
+ *)
+fun define_repcode prefix (asts :AST list) = let
+  val cs = constructors asts;
+  val rcs = map (fn s => prefix ^ s) cs;
+  val tynames = type_names asts;
+  val tyname0 = hd tynames;
+  val repcode = tyname0 ^ "_repcode";
+  val dtype = List.concat
+                [[QUOTE repcode], ‘=’, [QUOTE (hd rcs)],
+                 List.concat
+                   (List.map (fn s => List.concat [‘|’, [QUOTE s]]) (tl rcs))];
+in
+    (Datatype dtype; repcode)
+end;
+
+(* Step 1: parse datatype quotation
+   Step 2: define repcode (datatype)
+ *)
+fun Nominal_datatype q = let
+  val asts = parse_datatype q;
+  val tynames = type_names asts;
+  val repcode = define_repcode "r" asts;
+  val rep_t = mk_type (repcode,[]);
+in
+    {tynames = tynames, rep_t = rep_t}
+end;
 
 end (* struct *)

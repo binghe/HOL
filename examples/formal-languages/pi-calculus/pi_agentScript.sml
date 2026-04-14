@@ -4,13 +4,13 @@
 (*                                                                            *)
 (* Copyright 2025  Michael Norrish and Chun Tian                              *)
 (* ========================================================================== *)
+
 Theory pi_agent
 Ancestors
   pair pred_set list basic_swap generic_terms nomset
   term[qualified]  (* only for its syntax of SUB *)
 Libs
   listLib hurdUtils binderLib nomdatatype
-
 
 (* ----------------------------------------------------------------------
    Pi-calculus as a nominal datatype in HOL4
@@ -27,7 +27,7 @@ Libs
                 | Mismatch 'free 'free pi  (* [a <> b] P *)
                 | Sum pi pi                (* P + Q *)
                 | Par pi pi                (* P | Q *)
-                | Res 'bound pi            (* nu x. P *)
+                | Res 'bound pi            (* nu x. P *) ;
 
        residual = TauR pi
                 | InputS 'free 'bound pi      (* Input *)
@@ -38,17 +38,25 @@ Libs
    NOTE: Replication ("!") is not needed so far, but can be supported later.
    ---------------------------------------------------------------------- *)
 
-Datatype:
-  repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
-          | rPar | rRes
-          | rTauR | rInputS | rBoundOutput | rFreeOutput
-End
+val {tynames, rep_t} = Nominal_datatype
+          ‘pi   = Nil                       (* 0 *)
+                | Tau pi                    (* tau.P *)
+                | Input ''free ''bound pi   (* a(x).P *)
+                | Output ''free ''free pi   (* {a}b.P *)
+                | Match ''free ''free pi    (* [a == b] P *)
+                | Mismatch ''free ''free pi (* [a <> b] P *)
+                | Sum pi pi                 (* P + Q *)
+                | Par pi pi                 (* P | Q *)
+                | Res ''bound pi            (* nu x. P *)
+                ;
+       residual = TauR pi
+                | InputS ''free ''bound pi      (* Input *)
+                | BoundOutput ''free ''bound pi (* Bound output *)
+                | FreeOutput ''free ''free pi   (* Free output *)’;
 
-val tyname1 = "pi";
-val tyname2 = "residual";
+val tyname1 = List.nth (tynames,0);
+val tyname2 = List.nth (tynames,1);
 
-(* type 0 = name; 1 = pi; 2 = residual *)
-val rep_t = “:repcode”
 val d_tm = mk_var("d", rep_t);
 val lp =
   “(\n lfvs d tns uns.
@@ -1033,7 +1041,7 @@ val tlf =
 
 Overload TLF = tlf
 
-val FN = mk_var("FN", “:repcode gterm -> 'q -> 'r”)
+val FN = mk_var("FN", “:pi_repcode gterm -> 'q -> 'r”)
 val fn1_def_t = “fn1 = λp. ^FN (pi_REP p)”
 val fn2_def_t = “fn2 = λr. ^FN (residual_REP r)”
 
@@ -1063,7 +1071,7 @@ fun case1 (tm_def, repabs, defs) =
             asm_simp_tac bool_ss [GLAM_NIL_ELIM] >> AP_TERM_TAC >>
             SYM_TAC >> MATCH_MP_TAC repabs >>
             simp_tac list_ss [genind_GLAM_eqn,
-                              TypeBase.distinct_of “:repcode”,
+                              TypeBase.distinct_of “:pi_repcode”,
                               LIST_REL_NIL, LIST_REL_CONS1, PULL_EXISTS,
                               CONS_11, genind_term_REP1, genind_term_REP2]
           val goal =
