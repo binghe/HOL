@@ -342,7 +342,7 @@ end
     The "Nominal_datatype" API
    ---------------------------------------------------------------------- *)
 
-open ParseDatatype;
+open ParseDatatype numSyntax listSyntax;
 
 (*
 val q = ‘term = VAR 'free | APP term term | LAM 'bound term’;
@@ -421,16 +421,16 @@ val asts = ParseDatatype.hparse (type_grammar()) q;
        ("rec",
         [dVartype "'bound", dTyop {Args = [], Thy = NONE, Tyop = "CCS"}])])]
 
-  val q = ‘pi   = Nil                       (* 0 *)
-                | Tau pi                    (* tau.P *)
-                | Input 'free 'bound pi     (* a(x).P *)
-                | Output 'free 'free pi     (* {a}b.P *)
-                | Match 'free 'free pi      (* [a == b] P *)
-                | Mismatch 'free 'free pi   (* [a <> b] P *)
-                | Sum pi pi                 (* P + Q *)
-                | Par pi pi                 (* P | Q *)
-                | Res 'bound pi             (* nu x. P *) ;
-
+  val q = ‘pi   = Nil                         (* 0 *)
+                | Tau pi                      (* tau.P *)
+                | Input 'free 'bound pi       (* a(x).P *)
+                | Output 'free 'free pi       (* {a}b.P *)
+                | Match 'free 'free pi        (* [a == b] P *)
+                | Mismatch 'free 'free pi     (* [a <> b] P *)
+                | Sum pi pi                   (* P + Q *)
+                | Par pi pi                   (* P | Q *)
+                | Res 'bound pi               (* nu x. P *)
+                ;
        residual = TauR pi
                 | InputS 'free 'bound pi      (* Input *)
                 | BoundOutput 'free 'bound pi (* Bound output *)
@@ -480,15 +480,25 @@ fun type_names (asts :AST list) = List.map fst asts;
 
 (* ["Nil", "Tau", "Input", "Output", "Match", "Mismatch", "Sum", "Par",
     "Res", "TauR", "InputS", "BoundOutput", "FreeOutput"] *)
-fun constructors_and_types (asts :AST list) =
+fun constructor_and_types (asts :AST list) =
     List.concat (List.map (fn (_,df) =>
                               case df of
                                   Constructors cs => cs
                                 | Record _ => []) asts);
 
-fun constructors (asts :AST list) =
-    List.map fst (constructors_and_types asts);
+fun constructors (asts :AST list) = List.map fst (constructor_and_types asts);
 
+(* The special type variables 'free and 'bound (by default) are free and bound
+   names occurred in the nominal types being defined.
+
+   NOTE: Due to Datatype syntax restriction, each constructor supports at most
+   one bound name argument, and if it has two (or more) recursive term arguments,
+   only one (the first) is considered bounded. For instance, in labelled lambda
+   terms (lterm), we have the constructor ‘LAMi num 'bound lterm lterm’, which
+   actually means an application ‘(LAMi num 'bound lterm) @@ lterm’, where the
+   first lterm is bounded (by the name in the position of 'bound), while the
+   second lterm is not bounded by that name.
+ *)
 val free_tyname  = ref "'free";
 val bound_tyname = ref "'bound";
 
@@ -502,21 +512,21 @@ fun pretypeToType1 pty =
   | dTyop {Tyop = s, Thy, Args} => let
     in
       case Thy of
-        NONE => NONE
+        NONE => NONE (* This is referring to nominal types being defined *)
       | SOME t => SOME (Type.mk_thy_type{Tyop = s, Thy = t,
                                          Args = map pretypeToType Args})
     end
   | dAQ pty => SOME pty;
 
 fun constructor_types (asts) =
-    List.concat (List.map snd (constructors_and_types asts));
+    List.concat (List.map snd (constructor_and_types asts));
 
 fun external_types (asts) =
     List.map Option.valOf
              (List.filter Option.isSome
                           (List.map pretypeToType1 (constructor_types asts)));
 
-(* no leading ":" but with parenthesis *)
+(* no leading ":" but with parenthesis, e.g. ('a Action) *)
 fun type_to_string1 ty =
     let val s = type_to_string ty;
         val n = String.size s;
@@ -526,7 +536,19 @@ fun type_to_string1 ty =
 
 val external_type_vars = type_varsl o external_types;
 
-(* This function generates a quotation and call it by Datatype:
+val repcode = ref "repcode";
+val rprefix = ref "r";
+
+(* e.g., ("cprefix", [``:'a Action``]) *)
+fun repcode_pair (n,df) =
+    (!rprefix ^ n,
+     List.map Option.valOf
+              (List.filter Option.isSome (List.map pretypeToType1 df)));
+
+fun repcode_line (n,types) =
+    [QUOTE n] @ (List.map (QUOTE o type_to_string1) types);
+
+(* This function generates the term quotation and call it by Datatype, e.g.
 Datatype:
   repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
           | rPar | rRes | rTauR | rInputS | rBoundOutput | rFreeOutput
@@ -539,29 +561,168 @@ Datatype:
        | crec
 End
  *)
-val repcode = ref "repcode";
-val rprefix = ref "r";
-
-fun repcode_pair (n,df) =
-    (!rprefix ^ n,
-     List.map Option.valOf
-              (List.filter Option.isSome (List.map pretypeToType1 df)));
-
-fun repcode_line (n,df) =
-    [QUOTE n] @ (List.map (QUOTE o type_to_string1) df);
-
 fun define_repcode (asts :AST list) = let
-  val lines = List.map repcode_pair (constructors_and_types asts);
-  val tynames = type_names asts;
-  val tyname0 = hd tynames;
+  val lines = List.map repcode_pair (constructor_and_types asts);
   val dtype0 = [QUOTE (!repcode)] @ ‘=’ @ repcode_line (hd lines);
   val dtype1 = dtype0 @
-               List.concat
-                   (List.map (fn s => List.concat [‘|’, repcode_line s])
-                             (tl lines));
+               List.concat (List.map (fn s => ‘|’ @ repcode_line s) (tl lines));
   val types = external_type_vars asts;
 in
-    (Datatype dtype1; mk_type (!repcode,types))
+    (Datatype dtype1; mk_type (!repcode, types))
+end;
+
+(*
+Example 1 (multiple types; mixed free and bound names in the same constructor):
+
+  val q = ‘pi   = Nil                         (* 0 *)
+                | Tau pi                      (* tau.P *)
+                | Input 'free 'bound pi       (* a(x).P *)
+                | Output 'free 'free pi       (* {a}b.P *)
+                | Match 'free 'free pi        (* [a == b] P *)
+                | Mismatch 'free 'free pi     (* [a <> b] P *)
+                | Sum pi pi                   (* P + Q *)
+                | Par pi pi                   (* P | Q *)
+                | Res 'bound pi               (* nu x. P *)
+                ;
+       residual = TauR pi
+                | InputS 'free 'bound pi      (* Input *)
+                | BoundOutput 'free 'bound pi (* Bound output *)
+                | FreeOutput 'free 'free pi   (* Free output *)’;
+val lp =
+  “(\n lfvs d tns uns.
+     n = 0 /\ lfvs = 0 /\ d = rNil /\ tns = [] /\ uns = [] \/
+     n = 0 /\ lfvs = 0 /\ d = rTau /\ tns = [] /\ uns = [0] \/
+     n = 0 /\ lfvs = 1 /\ d = rInput /\ tns = [0] /\ uns = [] \/
+     n = 0 /\ lfvs = 2 /\ d = rOutput /\ tns = [] /\ uns = [0] \/
+     n = 0 /\ lfvs = 2 /\ d = rMatch /\ tns = [] /\ uns = [0] \/
+     n = 0 /\ lfvs = 2 /\ d = rMismatch /\ tns = [] /\ uns = [0] \/
+     n = 0 /\ lfvs = 0 /\ d = rSum /\ tns = [] /\ uns = [0; 0] \/
+     n = 0 /\ lfvs = 0 /\ d = rPar /\ tns = [] /\ uns = [0; 0] \/
+     n = 0 /\ lfvs = 0 /\ d = rRes /\ tns = [1] /\ uns = [] \/
+
+     n = 1 /\ lfvs = 0 /\ d = rTauR /\ tns = [] /\ uns = [0] \/
+     n = 1 /\ lfvs = 1 /\ d = rInputS /\ tns = [0] /\ uns = [] \/
+     n = 1 /\ lfvs = 1 /\ d = rBoundOutput /\ tns = [0] /\ uns = [] \/
+     n = 1 /\ lfvs = 2 /\ d = rFreeOutput /\ tns = [] /\ uns = [0]
+    )”;
+
+Example 2 (mixed free and bound recursive terms; external data):
+
+val q = ‘lterm = VAR 'free
+               | APP lterm lterm
+               | LAM 'bound lterm
+               | LAMi num 'bound lterm lterm’;
+val asts = ParseDatatype.hparse (type_grammar()) q;
+
+val lp = “λn lfvs (d:lrep) tns uns.
+            n = 0 /\ lfvs = 1 /\ d = lvar /\ tns = [] /\ uns = [] \/
+            n = 0 /\ lfvs = 0 /\ d = lapp /\ tns = [] /\ uns = [0;0] \/
+            n = 0 /\ lfvs = 0 /\ d = llam /\ tns = [0] /\ uns = [] \/
+            ?m. n = 0 /\ lfvs = 0 /\ d = llmi m /\ tns = [0] /\ uns = [0]”;
+
+  n is the index of (multiple) nominal types being defined
+  lfvs is the number of 'free names in the constructor
+  d is the repcode of the constructor
+  tns is the list of indexes of bounded arguments (at most one is allowed)
+  uns is the list of indexes of unbounded (free) arguments.
+*)
+
+(* NOTE: index_of "b" ["a", "b", "c"] = “1 :num” *)
+local
+    open Arbnum
+    fun index_of_inner (n :num) e l =
+        if e = hd l orelse tl l = [] then n
+        else index_of_inner (n + one) e (tl l);
+in
+fun index_of e l = numSyntax.mk_numeral (index_of_inner Arbnum.zero e l)
+end;
+
+fun build_lfvs (df) = let
+    val i = List.length (List.filter (fn e => e = dVartype (!free_tyname)) df);
+in
+    mk_eq (“lfvs :num”, mk_numeral (Arbnum.fromInt i))
+end;
+
+(* find_prev 2 [1,2,3,4,5] = 3 *)
+fun find_next e l =
+    if hd l = e then hd (tl l)
+    else find_next e (tl l);
+
+fun pretypeToName pty =
+    case pty of
+        dVartype s => s
+      | dTyop {Tyop = s, Thy, Args} => s
+      | dAQ pty => type_to_string pty;
+
+(* NOTE: Currently the “tns” list is either empty or singleton list containing
+   the index of a normal type being defined. We check the presence of 'bound
+   and get the index of the followed nominal type.
+
+   val df = [dVartype "'free", dVartype "'bound",
+             dTyop {Args = [], Thy = NONE, Tyop = "pi"}]
+   ==> tns = [0]
+ *)
+fun build_tns df tynames = let
+    val dv = dVartype (!bound_tyname);
+    val bound_names = List.filter (fn e => e = dv) df
+in
+    if bound_names = [] then
+        “tns = [] :num list”
+    else
+        let val i_tm = index_of (pretypeToName (find_next dv df)) tynames
+        in
+            mk_eq (“tns :num list”, mk_list ([i_tm], numSyntax.num))
+        end
+end;
+
+fun pretypeIsNominal pty =
+    case pty of
+        dVartype s => false
+      | dTyop {Tyop, Thy = thy, Args} => (thy = NONE)
+      | dAQ pty => false;
+
+(* filter_out2 2 [1,2,3,4,5] [] = [1,4,5] *)
+fun filter_out2 e l acc =
+    if l = [] then rev acc
+    else
+        if hd l = e then
+            filter_out2 e (tl (tl l)) acc
+        else
+            filter_out2 e (tl l) (hd l::acc);
+
+(* The “uns” list contains indexes of all nominal types, excluding the one
+   after 'bound (which is put into the “tns” list).
+ *)
+fun build_uns df tynames = let
+    val l1 = filter_out2 (dVartype (!bound_tyname)) df [];
+    val l2 = List.filter pretypeIsNominal l1;
+    val uns = List.map (fn e => index_of (pretypeToName e) tynames) l2
+in
+    mk_eq (“uns :num list”, mk_list (uns, numSyntax.num))
+end;
+
+fun build_lp_inner cptys tyname tynames rep_t = let
+    val n_tm = index_of tyname tynames
+in
+    List.map (fn (c:string,ptys) =>
+                 (mk_eq (“n :num”, n_tm),
+                  build_lfvs ptys,
+                  mk_eq (mk_var ("d", rep_t),
+                         mk_var (!rprefix ^ c,rep_t)),
+                  [] :term list,
+                  build_tns ptys tynames,
+                  build_uns ptys tynames)) cptys
+end;
+
+fun build_lp (asts :AST list) rep_t = let
+    val tynames = type_names asts
+in
+    List.concat
+        (List.map (fn (tyname,df) =>
+                      case df of
+                          Constructors cs =>
+                          build_lp_inner cs tyname tynames rep_t
+                        | Record _ => []) asts)
 end;
 
 (* Step 1: parse datatype quotation
@@ -572,7 +733,7 @@ fun nominal_datatype q = let
   val tynames = type_names asts;
   val rep_t = define_repcode asts;
 in
-    {tynames = tynames, rep_t = rep_t}
+    {tynames = tynames,rep_t = rep_t}
 end;
 
 end (* struct *)

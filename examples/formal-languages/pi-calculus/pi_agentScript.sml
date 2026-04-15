@@ -17,28 +17,11 @@ Libs
 
    HOL4 syntax ('free and 'bound are special type variables (alias of string)
 
-   Nominal_datatype :
-
-           pi   = Nil                      (* 0 *)
-                | Tau pi                   (* tau.P *)
-                | Input 'free 'bound pi    (* a(x).P *)
-                | Output 'free 'free pi    (* {a}b.P *)
-                | Match 'free 'free pi     (* [a == b] P *)
-                | Mismatch 'free 'free pi  (* [a <> b] P *)
-                | Sum pi pi                (* P + Q *)
-                | Par pi pi                (* P | Q *)
-                | Res 'bound pi            (* nu x. P *) ;
-
-       residual = TauR pi
-                | InputS 'free 'bound pi      (* Input *)
-                | BoundOutput 'free 'bound pi (* Bound output *)
-                | FreeOutput 'free 'free pi   (* Free output *)
-   End
-
    NOTE: Replication ("!") is not needed so far, but can be supported later.
    ---------------------------------------------------------------------- *)
 
-val {tynames, rep_t} = nominal_datatype
+val {tynames, rep_t} =
+    nominal_datatype
           ‘pi   = Nil                         (* 0 *)
                 | Tau pi                      (* tau.P *)
                 | Input 'free 'bound pi       (* a(x).P *)
