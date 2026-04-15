@@ -387,8 +387,7 @@ val asts = ParseDatatype.hparse (type_grammar()) q;
          dVartype "'bound", dTyop {Args = [], Thy = NONE, Tyop = "lterm"},
          dTyop {Args = [], Thy = NONE, Tyop = "lterm"}])])]
 
-val q =  ‘CCS = nil
-              | var 'free
+val q =  ‘CCS = var 'free
               | prefix ('a Action) CCS
               | sum CCS CCS
               | par CCS CCS
@@ -398,7 +397,7 @@ val q =  ‘CCS = nil
 val asts = ParseDatatype.hparse (type_grammar()) q;
    [("CCS",
      Constructors
-      [("nil", []), ("var", [dVartype "'free"]),
+      [("var", [dVartype "'free"]),
        ("prefix",
         [dTyop {Args = [dVartype "'a"], Thy = NONE, Tyop = "Action"},
          dTyop {Args = [], Thy = NONE, Tyop = "CCS"}]),
@@ -476,7 +475,7 @@ val asts = ParseDatatype.hparse (type_grammar()) q;
 fun parse_datatype q = hparse (type_grammar()) q;
 
 (* ["pi", "residual"] *)
-fun type_names (asts :AST list) = List.map fst asts;
+fun extract_tynames (asts :AST list) = List.map fst asts;
 
 (* ["Nil", "Tau", "Input", "Output", "Match", "Mismatch", "Sum", "Par",
     "Res", "TauR", "InputS", "BoundOutput", "FreeOutput"] *)
@@ -563,7 +562,7 @@ End
  *)
 fun define_repcode (asts :AST list) = let
     val lines = List.map repcode_pair (constructor_and_types asts);
-    val tynames = type_names asts;
+    val tynames = extract_tynames asts;
     val repname = if !repcode = "" then (hd tynames) ^ "_repcode"
                   else !repcode;
     val dtype0 = [QUOTE repname] @ ‘=’ @ repcode_line (hd lines);
@@ -591,6 +590,7 @@ Example 1 (multiple types; mixed free and bound names in the same constructor):
                 | InputS 'free 'bound pi      (* Input *)
                 | BoundOutput 'free 'bound pi (* Bound output *)
                 | FreeOutput 'free 'free pi   (* Free output *)’;
+val asts = ParseDatatype.hparse (type_grammar()) q;
 val lp =
   “(\n lfvs d tns uns.
      n = 0 /\ lfvs = 0 /\ d = rNil /\ tns = [] /\ uns = [] \/
@@ -748,7 +748,7 @@ val data =
    (term * term * string * term list * term * term) list
 *)
 fun build_lp (asts :AST list) rep_t = let
-    val tynames = type_names asts;
+    val tynames = extract_tynames asts;
     val data = List.concat (List.map (fn (tyname,df) =>
                                          case df of
                                              Constructors cs =>
@@ -775,7 +775,7 @@ end;
  *)
 fun nominal_datatype q = let
   val asts = parse_datatype q;
-  val tynames = type_names asts;
+  val tynames = extract_tynames asts;
   val rep_t = define_repcode asts;
   val lp_tm = build_lp asts rep_t
 in

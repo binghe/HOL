@@ -318,10 +318,9 @@ Theorem APPLY_RELAB_THM =
 val _ = (repcode := "crep");
 val _ = (rprefix := "c");
 
-val {tynames, rep_t, ...} =
+val {tynames, rep_t, lp} =
     nominal_datatype
-         ‘CCS = nil
-              | var 'free
+         ‘CCS = var 'free
               | prefix ('a Action) CCS
               | sum CCS CCS
               | par CCS CCS
@@ -337,22 +336,6 @@ val tyname = hd tynames; (* "CCS" *)
 
 (* val rep_t = “:'a crep” *)
 val d_tm = mk_var("d", rep_t);
-
-(* NOTE: ‘nil’ is now defined by ‘rec "s" (var "s")’, no more primitive.
- *)
-val lp =
-  “(\n lfvs ^d_tm tns uns.
-     n = 0 /\ lfvs = 1 /\ d = cvar /\ tns = [] /\ uns = [] \/     (* 0. var *)
-     (?a. n = 0 /\ lfvs = 0 ∧ d = cprefix a /\ tns = [] ∧
-          uns = [0]) \/                                           (* 1. prefix *)
-     n = 0 /\ lfvs = 0 ∧ d = csum /\ tns = [] /\ uns = [0;0] \/   (* 2. sum *)
-     n = 0 /\ lfvs = 0 ∧ d = cpar /\ tns = [] /\ uns = [0;0] \/   (* 3. par *)
-     (?ls. n = 0 /\ lfvs = 0 ∧ d = crestr ls /\ tns = [] /\
-           uns = [0]) \/                                          (* 4. restr *)
-     (?rl. n = 0 /\ lfvs = 0 ∧ d = crelab rl /\ tns = [] /\
-           uns = [0]) \/                                          (* 5. relab *)
-     n = 0 /\ lfvs = 0 ∧ d = crec /\ tns = [0] /\ uns = []        (* 6. rec *)
-    )”;
 
 Overload LP = “lp”
 

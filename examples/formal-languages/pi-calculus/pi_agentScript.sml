@@ -15,11 +15,10 @@ Libs
 (* ----------------------------------------------------------------------
    Pi-calculus as a nominal datatype in HOL4
 
-   HOL4 syntax ('free and 'bound are special type variables (alias of string)
-
    NOTE: Replication ("!") is not needed so far, but can be supported later.
    ---------------------------------------------------------------------- *)
 
+(* calling nominal_datatype *)
 val _ = (repcode := "repcode");
 
 val {tynames, rep_t, lp} =

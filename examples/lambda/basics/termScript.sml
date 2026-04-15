@@ -15,6 +15,7 @@ Libs
 
 val _ = set_fixity "=" (Infix(NONASSOC, 450))
 
+(* calling nominal_datatype *)
 val {tynames, rep_t, lp} =
     nominal_datatype ‘term = VAR 'free | APP term term | LAM 'bound term’;
 
