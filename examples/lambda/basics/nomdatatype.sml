@@ -536,7 +536,7 @@ fun type_to_string1 ty =
 
 val external_type_vars = type_varsl o external_types;
 
-val repcode = ref "repcode";
+val repcode = ref "";
 val rprefix = ref "r";
 
 (* e.g., ("cprefix", [``:'a Action``]) *)
@@ -562,13 +562,16 @@ Datatype:
 End
  *)
 fun define_repcode (asts :AST list) = let
-  val lines = List.map repcode_pair (constructor_and_types asts);
-  val dtype0 = [QUOTE (!repcode)] @ ‘=’ @ repcode_line (hd lines);
-  val dtype1 = dtype0 @
-               List.concat (List.map (fn s => ‘|’ @ repcode_line s) (tl lines));
-  val types = external_type_vars asts;
+    val lines = List.map repcode_pair (constructor_and_types asts);
+    val tynames = type_names asts;
+    val repname = if !repcode = "" then (hd tynames) ^ "_repcode"
+                  else !repcode;
+    val dtype0 = [QUOTE repname] @ ‘=’ @ repcode_line (hd lines);
+    val dtype1 = dtype0 @
+                 List.concat (List.map (fn s => ‘|’ @ repcode_line s) (tl lines));
+    val types = external_type_vars asts;
 in
-    (Datatype dtype1; mk_type (!repcode, types))
+    (Datatype dtype1; mk_type (repname, types))
 end;
 
 (*
@@ -637,16 +640,14 @@ in
 fun index_of e l = numSyntax.mk_numeral (index_of_inner Arbnum.zero e l)
 end;
 
-fun build_lfvs (df) = let
-    val i = List.length (List.filter (fn e => e = dVartype (!free_tyname)) df);
+fun build_lfvs (ptys) = let
+    val i = List.length (List.filter (fn e => e = dVartype (!free_tyname)) ptys)
 in
     mk_eq (“lfvs :num”, mk_numeral (Arbnum.fromInt i))
 end;
 
 (* find_prev 2 [1,2,3,4,5] = 3 *)
-fun find_next e l =
-    if hd l = e then hd (tl l)
-    else find_next e (tl l);
+fun find_next e l = if hd l = e then hd (tl l) else find_next e (tl l);
 
 fun pretypeToName pty =
     case pty of
@@ -658,18 +659,18 @@ fun pretypeToName pty =
    the index of a normal type being defined. We check the presence of 'bound
    and get the index of the followed nominal type.
 
-   val df = [dVartype "'free", dVartype "'bound",
-             dTyop {Args = [], Thy = NONE, Tyop = "pi"}]
+   val ptys = [dVartype "'free", dVartype "'bound",
+               dTyop {Args = [], Thy = NONE, Tyop = "pi"}]
    ==> tns = [0]
  *)
-fun build_tns df tynames = let
+fun build_tns ptys tynames = let
     val dv = dVartype (!bound_tyname);
-    val bound_names = List.filter (fn e => e = dv) df
+    val bound_names = List.filter (fn e => e = dv) ptys
 in
     if bound_names = [] then
         “tns = [] :num list”
     else
-        let val i_tm = index_of (pretypeToName (find_next dv df)) tynames
+        let val i_tm = index_of (pretypeToName (find_next dv ptys)) tynames
         in
             mk_eq (“tns :num list”, mk_list ([i_tm], numSyntax.num))
         end
@@ -693,36 +694,80 @@ fun filter_out2 e l acc =
 (* The “uns” list contains indexes of all nominal types, excluding the one
    after 'bound (which is put into the “tns” list).
  *)
-fun build_uns df tynames = let
-    val l1 = filter_out2 (dVartype (!bound_tyname)) df [];
+fun build_uns ptys tynames = let
+    val l1 = filter_out2 (dVartype (!bound_tyname)) ptys [];
     val l2 = List.filter pretypeIsNominal l1;
     val uns = List.map (fn e => index_of (pretypeToName e) tynames) l2
 in
     mk_eq (“uns :num list”, mk_list (uns, numSyntax.num))
 end;
 
-fun build_lp_inner cptys tyname tynames rep_t = let
+(* gen_names 3 [] = ["a0", "a1", "a2"] *)
+fun gen_names n acc =
+    if n = 0 then acc
+    else
+        gen_names (n - 1) (("a" ^ Int.toString (n - 1))::acc);
+
+fun build_args ptys = let
+    val tys = List.map Option.valOf
+                       (List.filter Option.isSome (List.map pretypeToType1 ptys));
+    val n = List.length tys; (* could be zero *)
+    val names = gen_names n []
+in
+    List.map mk_var (zip names tys)
+end;
+
+fun build_lp_inner cptys tyname tynames = let
     val n_tm = index_of tyname tynames
 in
     List.map (fn (c:string,ptys) =>
                  (mk_eq (“n :num”, n_tm),
                   build_lfvs ptys,
-                  mk_eq (mk_var ("d", rep_t),
-                         mk_var (!rprefix ^ c,rep_t)),
-                  [] :term list,
+                  c,
+                  build_args ptys,
                   build_tns ptys tynames,
                   build_uns ptys tynames)) cptys
 end;
 
-fun build_lp (asts :AST list) rep_t = let
-    val tynames = type_names asts
+fun build_d_term cname args rep_t = let
+    val rcname = !rprefix ^ cname;
+    val argtypes = List.map type_of args;
+    val c_ty = list_mk_fun (argtypes, rep_t);
+    val c_tm = mk_const (rcname,c_ty);
+    val d_tm = list_mk_comb (c_tm, args)
 in
-    List.concat
-        (List.map (fn (tyname,df) =>
-                      case df of
-                          Constructors cs =>
-                          build_lp_inner cs tyname tynames rep_t
-                        | Record _ => []) asts)
+    mk_eq (mk_var("d",rep_t), d_tm)
+end;
+
+(*
+val data =
+   [(``n = 0``, ``lfvs = 1``, "VAR", [], ``tns = []``, ``uns = []``),
+    (``n = 0``, ``lfvs = 0``, "APP", [], ``tns = []``, ``uns = [0; 0]``),
+    (``n = 0``, ``lfvs = 0``, "LAM", [], ``tns = [0]``, ``uns = []``),
+    (``n = 0``, ``lfvs = 0``, "LAMi", [``a0``], ``tns = [0]``, ``uns = [0]``)]:
+   (term * term * string * term list * term * term) list
+*)
+fun build_lp (asts :AST list) rep_t = let
+    val tynames = type_names asts;
+    val data = List.concat (List.map (fn (tyname,df) =>
+                                         case df of
+                                             Constructors cs =>
+                                             build_lp_inner cs tyname tynames
+                                           | Record _ => []) asts);
+    val c_tms = List.map
+                    (fn (n_tm,lfvs_tm,cname,args,tns_tm,uns_tm) =>
+                        list_mk_exists
+                            (args,
+                             list_mk_conj [n_tm, lfvs_tm,
+                                           build_d_term cname args rep_t,
+                                           tns_tm, uns_tm])) data;
+    val n_tm    = “n :num”
+    and lfvs_tm = “lfvs :num”
+    and d_tm    = mk_var ("d", rep_t)
+    and tns_tm  = “tns :num list”
+    and uns_tm  = “uns :num list”
+in
+    list_mk_abs ([n_tm, lfvs_tm, d_tm, tns_tm, uns_tm], list_mk_disj c_tms)
 end;
 
 (* Step 1: parse datatype quotation
@@ -732,8 +777,11 @@ fun nominal_datatype q = let
   val asts = parse_datatype q;
   val tynames = type_names asts;
   val rep_t = define_repcode asts;
+  val lp_tm = build_lp asts rep_t
 in
-    {tynames = tynames,rep_t = rep_t}
+    {tynames = tynames,
+     rep_t = rep_t,
+     lp = lp_tm}
 end;
 
 end (* struct *)

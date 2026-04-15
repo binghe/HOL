@@ -318,7 +318,7 @@ Theorem APPLY_RELAB_THM =
 val _ = (repcode := "crep");
 val _ = (rprefix := "c");
 
-val {tynames, rep_t} =
+val {tynames, rep_t, ...} =
     nominal_datatype
          ‘CCS = nil
               | var 'free

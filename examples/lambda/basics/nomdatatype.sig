@@ -53,6 +53,7 @@ sig
   val rprefix      : string ref
   val nominal_datatype : hol_type quotation ->
                         {tynames : string list,
-                         rep_t   : hol_type}
+                         rep_t   : hol_type,
+                         lp      : term}
 
 end

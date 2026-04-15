@@ -20,7 +20,9 @@ Libs
    NOTE: Replication ("!") is not needed so far, but can be supported later.
    ---------------------------------------------------------------------- *)
 
-val {tynames, rep_t} =
+val _ = (repcode := "repcode");
+
+val {tynames, rep_t, lp} =
     nominal_datatype
           ‘pi   = Nil                         (* 0 *)
                 | Tau pi                      (* tau.P *)
@@ -41,23 +43,6 @@ val tyname1 = List.nth (tynames,0);
 val tyname2 = List.nth (tynames,1);
 
 val d_tm = mk_var("d", rep_t);
-val lp =
-  “(\n lfvs d tns uns.
-     n = 1 /\ lfvs = 0 /\ d = rNil ∧ tns = [] ∧ uns = [] \/
-     n = 1 /\ lfvs = 0 /\ d = rTau ∧ tns = [] /\ uns = [1] \/
-     n = 1 /\ lfvs = 1 /\ d = rInput ∧ tns = [1] /\ uns = [] \/
-     n = 1 /\ lfvs = 2 /\ d = rOutput ∧ tns = [] /\ uns = [1] \/
-     n = 1 /\ lfvs = 2 /\ d = rMatch ∧ tns = [] /\ uns = [1] \/
-     n = 1 /\ lfvs = 2 /\ d = rMismatch ∧ tns = [] /\ uns = [1] \/
-     n = 1 /\ lfvs = 0 /\ d = rSum ∧ tns = [] /\ uns = [1; 1] \/
-     n = 1 /\ lfvs = 0 /\ d = rPar ∧ tns = [] /\ uns = [1; 1] \/
-     n = 1 /\ lfvs = 0 /\ d = rRes ∧ tns = [1] /\ uns = [] \/
-
-     n = 2 /\ lfvs = 0 /\ d = rTauR ∧ tns = [] ∧ uns = [1] \/
-     n = 2 /\ lfvs = 1 /\ d = rInputS ∧ tns = [1] /\ uns = [] \/
-     n = 2 /\ lfvs = 1 /\ d = rBoundOutput ∧ tns = [1] /\ uns = [] \/
-     n = 2 /\ lfvs = 2 /\ d = rFreeOutput ∧ tns = [] /\ uns = [1]
-    )”;
 
 (* This is often useful for debugging purposes *)
 Overload LP = lp;
@@ -72,7 +57,7 @@ val {term_ABS_pseudo11 = term_ABS_pseudo11_1,
      repabs_pseudo_id = repabs_pseudo_id1,
      term_REP_t = term_REP_t1,
      term_ABS_t = term_ABS_t1,
-     newty = newty1, ...} = new_type_step1 tyname1 1 [] {lp = lp};
+     newty = newty1, ...} = new_type_step1 tyname1 0 [] {lp = lp};
 
 (* type 2 (:residual) *)
 val {term_ABS_pseudo11 = term_ABS_pseudo11_2,
@@ -85,7 +70,7 @@ val {term_ABS_pseudo11 = term_ABS_pseudo11_2,
      term_REP_t = term_REP_t2,
      term_ABS_t = term_ABS_t2,
      newty = newty2, ...} =
-     new_type_step1 tyname2 2 [genind_exists1] {lp = lp};
+     new_type_step1 tyname2 1 [genind_exists1] {lp = lp};
 
 (* ----------------------------------------------------------------------
     Pi-calculus operators
@@ -562,8 +547,8 @@ val term_ind1 =
         |> Q.INST [‘lp’ |-> ‘^lp’]
         |> SIMP_RULE std_ss [LIST_REL_CONS1, RIGHT_AND_OVER_OR,
                              LEFT_AND_OVER_OR, DISJ_IMP_THM, LIST_REL_NIL]
-        |> Q.SPECL [‘\n t0 x. n = 1 ==> Q t0 x’, ‘fv’]
-        |> UNDISCH |> Q.SPEC ‘1’ |> DISCH_ALL
+        |> Q.SPECL [‘\n t0 x. n = 0 ==> Q t0 x’, ‘fv’]
+        |> UNDISCH |> Q.SPEC ‘0’ |> DISCH_ALL
         |> SIMP_RULE (std_ss ++ DNF_ss)
                      [sumTheory.FORALL_SUM, supp_listpm, LENGTH_NIL,
                       LENGTH1, LENGTH2,
@@ -628,8 +613,8 @@ val term_ind2 =
         |> Q.INST [‘lp’ |-> ‘^lp’]
         |> SIMP_RULE std_ss [LIST_REL_CONS1, RIGHT_AND_OVER_OR,
                              LEFT_AND_OVER_OR, DISJ_IMP_THM, LIST_REL_NIL]
-        |> Q.SPECL [‘\n t0 x. n = 2 ==> Q t0 x’, ‘fv’]
-        |> UNDISCH |> Q.SPEC ‘2’ |> DISCH_ALL
+        |> Q.SPECL [‘\n t0 x. n = 1 ==> Q t0 x’, ‘fv’]
+        |> UNDISCH |> Q.SPEC ‘1’ |> DISCH_ALL
         |> SIMP_RULE (std_ss ++ DNF_ss)
                      [sumTheory.FORALL_SUM, supp_listpm, LENGTH_NIL,
                       LENGTH1, LENGTH2,
@@ -951,10 +936,10 @@ val termP_removal2 =
 
 val termP' = prove(
    “genind ^lp n t <=>
-      ^termP1 t /\ n = 1 \/
-      ^termP2 t /\ n = 2”,
+      ^termP1 t /\ n = 0 \/
+      ^termP2 t /\ n = 1”,
     EQ_TAC >> simp_tac (srw_ss()) [] >> strip_tac >> rw []
- >> qsuff_tac ‘n = 1 \/ n = 2’ >- (strip_tac >> srw_tac [][])
+ >> qsuff_tac ‘n = 0 \/ n = 1’ >- (strip_tac >> srw_tac [][])
  >> pop_assum mp_tac
  >> Q.ISPEC_THEN ‘t’ STRUCT_CASES_TAC gterm_cases
  >> srw_tac [][genind_GLAM_eqn]);
@@ -1054,7 +1039,7 @@ fun case1 (tm_def, repabs, defs) =
             asm_simp_tac bool_ss [GLAM_NIL_ELIM] >> AP_TERM_TAC >>
             SYM_TAC >> MATCH_MP_TAC repabs >>
             simp_tac list_ss [genind_GLAM_eqn,
-                              TypeBase.distinct_of “:repcode”,
+                              TypeBase.distinct_of rep_t,
                               LIST_REL_NIL, LIST_REL_CONS1, PULL_EXISTS,
                               CONS_11, genind_term_REP1, genind_term_REP2]
           val goal =
