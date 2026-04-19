@@ -119,8 +119,8 @@ fun first2 l =
       (x::y::_) => (x,y)
     | _ => raise Fail "first2: list doesn't have at least two elements"
 
-(* NOTE: In case multiple mutually recursive nominal types are being defined, "witnesses"
-   argument takes a list of [genind_exists] theorems generated from previous calls to the
+(* NOTE: In case multiple nominal types are being defined, "witnesses" argument
+   takes a list of [genind_exists] theorems generated from previous calls to the
    current function, otherwise the proof of term_exists may not succeed.
  *)
 fun new_type_step1 tyname n witnesses {lp} = let
