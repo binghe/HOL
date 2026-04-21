@@ -1404,14 +1404,11 @@ Proof
     solvable N
   *)
  >> POP_ASSUM (STRIP_ASSUME_TAC o MATCH_MP lameta_CR)
- (* applying corollary3_2_1 *)
  >> Know ‘Z = I’
- >- (Suff ‘normal_form (beta RUNION eta) I’ >- METIS_TAC [corollary3_2_1] \\
-     simp [beta_eta_normal_form_benf, benf_def])
+ >- (Suff ‘benf I’ >- METIS_TAC [benf_reduction_to_self] \\
+     simp [benf_def])
  >> DISCH_THEN (fs o wrap)
- (* applying takahashi_3_5 *)
  >> ‘?P. N @* Ns -b->* P /\ reduction eta P I’ by METIS_TAC [takahashi_3_5]
- (* applying eta_reduction_imp_has_bnf (takahashi_3_6 corollary) *)
  >> Know ‘has_bnf P’
  >- (MATCH_MP_TAC reduction_eta_imp_has_bnf \\
      Q.EXISTS_TAC ‘I’ >> art [] \\

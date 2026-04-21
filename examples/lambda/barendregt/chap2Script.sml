@@ -326,6 +326,10 @@ val _ = set_fixity "===" (Infix(NONASSOC, 450))
 val _ = overload_on("===", “lameta”);
 val _ = TeX_notation { hol = "===", TeX = ("\\HOLTokenLameta", 1) };
 
+Overload "=/==" = “\M (N :term). ~(M === N)”
+val _ = set_fixity "=/==" (Infix(NONASSOC, 450))
+val _ = TeX_notation { hol = "=/==", TeX = ("\\HOLTokenNotLameta", 1) };
+
 Theorem lameta_LAMl_cong :
     !vs M N. M === N ==> LAMl vs M === LAMl vs N
 Proof

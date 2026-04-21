@@ -113,7 +113,7 @@ QED
    N  -h->* N0 --b->* N0' ---+
 
    M0  = LAMl vs1 (VAR y @* args1)
-   M0' = LAMl vs1 (VAR y @* args1')    (EL i args -b->* EL i args')
+   M0' = LAMl vs1 (VAR y @* args1')   (EL i args -b->* EL i args')
    P   = LAMl vs  (VAR y @* args)      args1' = args ++ MAP VAR ys1
    N0' = LAMl vs2 (VAR y @* args2')    args2' = args ++ MAP VAR ys2
    N0  = LAMl vs2 (VAR y @* args2)     args2  = _    ++ MAP VAR ys2
