@@ -140,10 +140,45 @@ Proof
  >> Q_TAC (UNBETA_TAC [vsubterm_def]) ‘vsubterm X M (h::p) r’
  >> Q_TAC (UNBETA_TAC [vsubterm_def]) ‘vsubterm X N (h::p) r’
  >> FIRST_X_ASSUM MATCH_MP_TAC
- (* stage work, subterm_induction_lemma' *)
+ >> CONJ_TAC
+ >- (Cases_on ‘h < m’ >> simp [Abbr ‘M2’]
+     >- (MATCH_MP_TAC subterm_induction_lemma' \\
+         qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp [] \\
+         simp [Abbr ‘m’, Once EQ_SYM_EQ] \\
+         MATCH_MP_TAC hnf_children_size_alt \\
+         qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> simp []) \\
+     simp [IN_UNION] >> DISJ2_TAC \\
+     Know ‘set zs SUBSET RANK (SUC r)’
+     >- (qunabbrev_tac ‘zs’ \\
+         MATCH_MP_TAC RNEWS_SUBSET_RANK >> simp []) \\
+     Suff ‘z IN set zs’ >- METIS_TAC [SUBSET_DEF] \\
+     qunabbrev_tac ‘z’ \\
+     MATCH_MP_TAC LAST_MEM \\
+     qunabbrev_tac ‘zs’ \\
+     Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n + SUC j”)) ‘X’ \\
+     simp [NOT_NIL_EQ_LENGTH_NOT_0])
+ >> CONJ_TAC
+ >- (Cases_on ‘h < m'’ >> simp [Abbr ‘M2'’]
+     >- (MATCH_MP_TAC subterm_induction_lemma' \\
+         qexistsl_tac [‘N’, ‘M0'’, ‘n'’, ‘m'’, ‘vs'’, ‘M1'’] >> simp [] \\
+         simp [Abbr ‘m'’, Once EQ_SYM_EQ] \\
+         MATCH_MP_TAC hnf_children_size_alt \\
+         qexistsl_tac [‘X’, ‘N’, ‘r’, ‘n'’, ‘vs'’, ‘M1'’] >> simp []) \\
+     simp [IN_UNION] >> DISJ2_TAC \\
+     Know ‘set zs' SUBSET RANK (SUC r)’
+     >- (qunabbrev_tac ‘zs'’ \\
+         MATCH_MP_TAC RNEWS_SUBSET_RANK >> simp []) \\
+     Suff ‘z' IN set zs'’ >- METIS_TAC [SUBSET_DEF] \\
+     qunabbrev_tac ‘z'’ \\
+     MATCH_MP_TAC LAST_MEM \\
+     qunabbrev_tac ‘zs'’ \\
+     Q_TAC (RNEWS_TAC (“zs' :string list”, “r :num”, “n' + SUC j'”)) ‘X’ \\
+     simp [NOT_NIL_EQ_LENGTH_NOT_0])
+ (* stage work *)
  >> cheat
 QED
 
+(* NOTE: cf. lameq_subterm_cong *)
 Theorem lameta_vsubterm_cong :
     !X M N p r. FINITE X /\
                 FV M SUBSET X UNION RANK r /\
