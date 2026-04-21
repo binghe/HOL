@@ -96,30 +96,6 @@ Proof
  >> simp [GSYM BT_ltree_paths_thm]
 QED
 
-(* Step 1 (by beta_eta_CR):
-
-   M  -h->* M0 ---+ reduction (beta UNION eta)
-   |        |      \
- lameta   lameta    P
-   |        |      /
-   N  -h->* N0 ---+
-
-  Step 2 (by takahashi_3_5)
-
-   M  -h->* M0 --b->* M0' ---+ reduction eta
-   |        |                 \
- lameta   lameta               P
-   |        |                 /
-   N  -h->* N0 --b->* N0' ---+
-
-   M0  = LAMl vs1 (VAR y @* args1)
-   M0' = LAMl vs1 (VAR y @* args1')   (EL i args -b->* EL i args')
-   P   = LAMl vs  (VAR y @* args)      args1' = args ++ MAP VAR ys1
-   N0' = LAMl vs2 (VAR y @* args2')    args2' = args ++ MAP VAR ys2
-   N0  = LAMl vs2 (VAR y @* args2)     args2  = _    ++ MAP VAR ys2
-
-   “vsubterm X M p r” directly access ‘args1’ and ‘args2’.
- *)
 Theorem lameta_vsubterm_cong_lemma[local] :
     !X. FINITE X ==>
         !p M N r.
@@ -175,6 +151,71 @@ Proof
      Q_TAC (RNEWS_TAC (“zs' :string list”, “r :num”, “n' + SUC j'”)) ‘X’ \\
      simp [NOT_NIL_EQ_LENGTH_NOT_0])
  (* stage work *)
+ >> Know ‘M0 === M0'’
+ >- (Q_TAC (TRANS_TAC lameta_TRANS) ‘M’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC lameq_imp_lameta \\
+         qunabbrev_tac ‘M0’ \\
+         MATCH_MP_TAC lameq_principal_hnf' >> art []) \\
+     Q_TAC (TRANS_TAC lameta_TRANS) ‘N’ >> art [] \\
+     MATCH_MP_TAC lameq_imp_lameta \\
+     qunabbrev_tac ‘M0'’ \\
+     MATCH_MP_TAC lameq_SYM \\
+     MATCH_MP_TAC lameq_principal_hnf' >> art [])
+ >> DISCH_TAC
+ >> ‘?Z. M0 -be->* Z /\ M0' -be->* Z’ by METIS_TAC [lameta_CR]
+ (*
+    M -h->* M0 -be->*
+    |       |        \
+   ===     ===        Z
+    |       |        /
+    N -h->* M0'-be->*
+  *)
+ >> ‘?P.  M0  -b->* P  /\ P  -e->* Z’ by METIS_TAC [takahashi_3_5]
+ >> ‘?P'. M0' -b->* P' /\ P' -e->* Z’ by METIS_TAC [takahashi_3_5]
+ >> Q.PAT_X_ASSUM ‘M0  -be->* Z’ K_TAC
+ >> Q.PAT_X_ASSUM ‘M0' -be->* Z’ K_TAC
+ (*
+    M -h->* M0 --b->* P -e->*
+    |       |                \
+   ===     ===                Z
+    |       |                /
+    N -h->* M0'--b->* P'-e->*
+  *)
+ >> qunabbrev_tac ‘vs’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma']
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y  :string”, “args :term list”)) ‘M1’
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV M0)’ K_TAC
+ >> ‘TAKE (LAMl_size M0) vs = vs’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ >> qunabbrev_tac ‘vs'’
+ >> Q_TAC (RNEWS_TAC (“vs' :string list”, “r :num”, “n' :num”)) ‘X’
+ >> ‘DISJOINT (set vs') (FV M0')’ by METIS_TAC [subterm_disjoint_lemma']
+ >> Q_TAC (HNF_TAC (“M0' :term”, “vs' :string list”,
+                    “y'  :string”, “args' :term list”)) ‘M1'’
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs') (FV M0')’ K_TAC
+ >> ‘TAKE (LAMl_size M0') vs' = vs'’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ >> qunabbrevl_tac [‘M1’, ‘M1'’, ‘M2’, ‘M2'’]
+ >> qabbrev_tac ‘M1  = principal_hnf (M0  @* MAP VAR vs)’
+ >> qabbrev_tac ‘M1' = principal_hnf (M0' @* MAP VAR vs')’
+ >> ‘args = Ms’ by rw [Abbr ‘Ms’]
+ >> POP_ASSUM (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘args' = Ms'’ (fs o wrap o SYM) >> T_TAC
+ (* applying hnf_betastar_cases *)
+ >> Q.PAT_X_ASSUM ‘LAMl vs (VAR y @* args) -b->* P’
+      (STRIP_ASSUME_TAC o MATCH_MP hnf_betastar_cases) (* NS *)
+ >> Q.PAT_X_ASSUM ‘LAMl vs' (VAR y' @* args') -b->* P'’
+      (STRIP_ASSUME_TAC o MATCH_MP hnf_betastar_cases) (* NS' *)
+(*
+   M0  = LAMl vs  (VAR y  @* args)
+   P   = LAMl vs  (VAR y  @* Ns)    (EL i args  -b->* EL i Ns)
+   Z   = LAMl _   (VAR _  @* _)
+   P'  = LAMl vs' (VAR y' @* Ns')   (EL i args' -b->* EL i Ns')
+   M0' = LAMl vs' (VAR y' @* args')
+ *)
  >> cheat
 QED
 

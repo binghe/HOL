@@ -1539,8 +1539,24 @@ Proof
  >> Q.EXISTS_TAC ‘EL i Ns’ >> rw []
 QED
 
+(* LAMl (vs ++ [v]) (VAR y @* Ms ++ [VAR v]) -e-> LAMl vs (VAR y @* Ms) *)
+Theorem hnf_eta_reduction_cases :
+    !vs y Ms N. LAMl vs (VAR y @* Ms) -e->* N ==>
+                ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* (BUTLASTN n Ns)) /\
+                       LENGTH Ns = LENGTH Ms /\
+                       !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns
+Proof
+    Induct_on ‘RTC’
+ >> CONJ_TAC
+ >- (qx_genl_tac [‘N’, ‘vs’, ‘y’, ‘Ms’] >> rw [] \\
+     qexistsl_tac [‘Ms’, ‘0’] \\
+     simp [BUTLASTN])
+ >> qx_genl_tac [‘P’, ‘Q’, ‘N’] >> rw []
+ >> cheat
+QED
+
 Theorem lameq_principal_hnf_lemma_general :
-    !r X M N. FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\
+    !X M N r. FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\
               hnf M /\ hnf N /\ M == N
           ==> LAMl_size M = LAMl_size N /\
               let n = LAMl_size M;
@@ -1657,7 +1673,8 @@ QED
  *)
 Theorem lameq_principal_hnf_lemma =
         lameq_principal_hnf_lemma_general
-     |> Q.SPEC ‘0’ |> SRULE [GSYM CONJ_ASSOC]
+     |> SPEC_ALL |> Q.GEN ‘r’ |> Q.SPEC ‘0’ |> SRULE [GSYM CONJ_ASSOC]
+     |> Q.GENL [‘X’, ‘M’, ‘N’]
 
 Theorem lameq_principal_hnf_size_eq :
     !M N. has_hnf M /\ has_hnf N /\ M == N ==>
@@ -1718,7 +1735,7 @@ Proof
  >> DISCH_TAC
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principal_hnf]
  (* applying lameq_principal_hnf_lemma *)
- >> MP_TAC (Q.SPECL [‘r’, ‘X’, ‘M0’, ‘N0’] lameq_principal_hnf_lemma_general)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M0’, ‘N0’, ‘r’] lameq_principal_hnf_lemma_general)
  >> Suff ‘FV M0 SUBSET X UNION RANK r /\
           FV N0 SUBSET X UNION RANK r’ >- rw []
  (* applying principal_hnf_FV_SUBSET *)
@@ -1773,7 +1790,7 @@ Proof
  >> DISCH_TAC
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principal_hnf]
  (* applying lameq_principal_hnf_lemma *)
- >> MP_TAC (Q.SPECL [‘r’, ‘X’, ‘M0’, ‘N0’] lameq_principal_hnf_lemma_general)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M0’, ‘N0’, ‘r’] lameq_principal_hnf_lemma_general)
  >> Suff ‘FV M0 SUBSET X UNION RANK r /\
           FV N0 SUBSET X UNION RANK r’ >- rw []
  (* applying principal_hnf_FV_SUBSET *)

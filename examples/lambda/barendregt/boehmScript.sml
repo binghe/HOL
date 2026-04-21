@@ -1460,8 +1460,7 @@ Proof
  >> POP_ASSUM (rfs o wrap)
  >> Cases_on ‘h < m’ >> simp []
  >> ‘Ms = args’ by rw [Abbr ‘Ms’]
- >> POP_ASSUM (fs o wrap)
- >> T_TAC
+ >> POP_ASSUM (fs o wrap) >> T_TAC
  >> DISCH_TAC
  (* applying IH *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
@@ -1511,6 +1510,8 @@ Proof
                     “y :string”, “args :term list”)) ‘M1’
  >> Q_TAC (HNF_TAC (“M0':term”, “vs :string list”,
                     “y' :string”, “args':term list”)) ‘M1'’
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV M0)’  K_TAC
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV M0')’ K_TAC
  >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (rfs o wrap)
  (* refine P1 and Q1 again for clear assumptions using them *)
