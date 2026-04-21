@@ -8,7 +8,7 @@ Theory solvable
 Ancestors
   arithmetic pred_set list rich_list sorting finite_map path
   relation pair basic_swap nomset term appFOLDL chap2 chap3
-  head_reduction standardisation horeduction normal_order
+  head_reduction standardisation horeduction normal_order takahashiS3
 Libs
   hurdUtils listLib binderLib reductionEval
 
@@ -1365,6 +1365,87 @@ Proof
  >> MATCH_MP_TAC lameq_solvable_cong_lemma >> art []
 QED
 
+Theorem unsolvable_APP_I:
+  unsolvable M ⇒ unsolvable (M @@ N)
+Proof
+  metis_tac[solvable_iff_has_hnf, has_hnf_APP_E]
+QED
+
+Theorem unsolvable_appstar_I:
+  ∀M Ns. unsolvable M ⇒ unsolvable (M @* Ns)
+Proof
+  Induct_on ‘Ns’ >> simp[unsolvable_APP_I]
+QED
+
+Theorem lameta_solvable_cong_lemma[local] :
+    !M N. closed M /\ closed N /\ M === N ==> (solvable M <=> solvable N)
+Proof
+    Suff ‘!M N. closed M /\ closed N /\ M === N /\ solvable M ==> solvable N’
+ >- METIS_TAC [lameta_SYM]
+ >> rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘solvable M’
+     (MP_TAC o REWRITE_RULE [MATCH_MP solvable_alt_closed
+                                      (ASSUME “closed (M :term)”)])
+ >> STRIP_TAC
+ >> Know ‘N @* Ns === I’
+ >- (Q_TAC (TRANS_TAC lameta_TRANS) ‘M @* Ns’ \\
+     simp [lameq_imp_lameta] \\
+     MATCH_MP_TAC lameta_appstar_cong \\
+     simp [Once lameta_SYM])
+ >> DISCH_TAC
+ (* applying lameta_CR, with the following plan:
+    N @* Ns === I
+    N @* Ns -be->* I
+    ?P. N @* Ns -b->* P /\ P -e->* I
+    has_bnf P
+    has_bnf (N @* Ns)
+    has_hnf (N @* Ns)
+    solvable (N @* Ns)
+    solvable N
+  *)
+ >> POP_ASSUM (STRIP_ASSUME_TAC o MATCH_MP lameta_CR)
+ (* applying corollary3_2_1 *)
+ >> Know ‘Z = I’
+ >- (Suff ‘normal_form (beta RUNION eta) I’ >- METIS_TAC [corollary3_2_1] \\
+     simp [beta_eta_normal_form_benf, benf_def])
+ >> DISCH_THEN (fs o wrap)
+ (* applying takahashi_3_5 *)
+ >> ‘?P. N @* Ns -b->* P /\ reduction eta P I’ by METIS_TAC [takahashi_3_5]
+ (* applying eta_reduction_imp_has_bnf (takahashi_3_6 corollary) *)
+ >> Know ‘has_bnf P’
+ >- (MATCH_MP_TAC reduction_eta_imp_has_bnf \\
+     Q.EXISTS_TAC ‘I’ >> art [] \\
+     MATCH_MP_TAC bnf_has_bnf >> simp [])
+ >> simp [has_bnf_thm]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘Q’ STRIP_ASSUME_TAC)
+ >> Know ‘has_bnf (N @* Ns)’
+ >- (simp [has_bnf_thm] \\
+     Q.EXISTS_TAC ‘Q’ >> art [] \\
+     PROVE_TAC [reduction_rules])
+ >> DISCH_TAC
+ >> ‘solvable (N @* Ns)’ by PROVE_TAC [has_bnf_hnf, solvable_iff_has_hnf]
+ >> PROVE_TAC [unsolvable_appstar_I]
+QED
+
+Theorem lameta_solvable_cong :
+    !M N. M === N ==> (solvable M <=> solvable N)
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘vs = SET_TO_LIST (FV M UNION FV N)’
+ >> qabbrev_tac ‘M0 = LAMl vs M’
+ >> qabbrev_tac ‘N0 = LAMl vs N’
+ >> Know ‘closed M0 /\ closed N0’
+ >- (rw [closed_def, Abbr ‘M0’, Abbr ‘N0’, Abbr ‘vs’, FV_LAMl] \\
+    ‘FINITE (FV M UNION FV N)’ by rw [] \\
+     simp [SET_TO_LIST_INV] >> SET_TAC [])
+ >> STRIP_TAC
+ (* applying solvable_iff_LAMl *)
+ >> ‘solvable M <=> solvable M0’ by (rw [Abbr ‘M0’]) >> POP_ORW
+ >> ‘solvable N <=> solvable N0’ by (rw [Abbr ‘N0’]) >> POP_ORW
+ >> ‘M0 === N0’ by rw [Abbr ‘M0’, Abbr ‘N0’, lameta_LAMl_cong]
+ >> MATCH_MP_TAC lameta_solvable_cong_lemma >> art []
+QED
+
 Theorem hreduce_solvable_cong :
     !M N. M -h->* N ==> (solvable M <=> solvable N)
 Proof
@@ -1874,18 +1955,6 @@ Theorem principal_hnf_tpm' =
     Logic, Language and Computation: Festschrift in Honor of Satoru Takasu.
     1994, Springer. doi: 10.1007/BFb0032397
 *)
-
-Theorem unsolvable_APP_I:
-  unsolvable M ⇒ unsolvable (M @@ N)
-Proof
-  metis_tac[solvable_iff_has_hnf, has_hnf_APP_E]
-QED
-
-Theorem unsolvable_appstar_I:
-  ∀M Ns. unsolvable M ⇒ unsolvable (M @* Ns)
-Proof
-  Induct_on ‘Ns’ >> simp[unsolvable_APP_I]
-QED
 
 Theorem equal_hnfs_E:
   ∀xs ys x y Xs Ys.
