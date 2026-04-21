@@ -62,9 +62,9 @@ Definition vsubterm_def :
            j = h - m;
           zs = RNEWS r (n + SUC j) X;
            z = LAST zs;
-           N = if h < m then EL h Ms else VAR z
+          M2 = if h < m then EL h Ms else VAR z
       in
-        vsubterm X N p (SUC r)
+        vsubterm X M2 p (SUC r)
     else
       NONE
 End
@@ -120,13 +120,39 @@ QED
 
    “vsubterm X M p r” directly access ‘args1’ and ‘args2’.
  *)
-Theorem lameta_vsubterm_cong :
-    !X M N r. FINITE X /\
-              FV M SUBSET X UNION RANK r /\
-              FV N SUBSET X UNION RANK r /\
-              M === N ==> !p. vsubterm X M p r = vsubterm X N p r
+Theorem lameta_vsubterm_cong_lemma[local] :
+    !X. FINITE X ==>
+        !p M N r.
+           FV M SUBSET X UNION RANK r /\
+           FV N SUBSET X UNION RANK r /\ M === N
+          ==>
+          (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
+           vsubterm X M p r <> NONE ==>
+           vsubterm' X M p r === vsubterm' X N p r
 Proof
-    cheat
+    NTAC 2 STRIP_TAC
+ >> Induct_on ‘p’ >- simp []
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- (‘unsolvable N’ by PROVE_TAC [lameta_solvable_cong] \\
+     simp [vsubterm_def])
+ >> ‘solvable N’ by PROVE_TAC [lameta_solvable_cong]
+ >> Q_TAC (UNBETA_TAC [vsubterm_def]) ‘vsubterm X M (h::p) r’
+ >> Q_TAC (UNBETA_TAC [vsubterm_def]) ‘vsubterm X N (h::p) r’
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ (* stage work, subterm_induction_lemma' *)
+ >> cheat
+QED
+
+Theorem lameta_vsubterm_cong :
+    !X M N p r. FINITE X /\
+                FV M SUBSET X UNION RANK r /\
+                FV N SUBSET X UNION RANK r /\ M === N
+           ==> (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
+                vsubterm X M p r <> NONE ==>
+                vsubterm' X M p r === vsubterm' X N p r
+Proof
+    PROVE_TAC [lameta_vsubterm_cong_lemma]
 QED
 
 val _ = html_theory "separability";

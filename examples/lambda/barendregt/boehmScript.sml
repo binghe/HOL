@@ -1470,46 +1470,24 @@ Proof
  >> qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp []
 QED
 
-Theorem lameq_subterm_cong_none :
-    !p X M N r. FINITE X /\
-                FV M SUBSET X UNION RANK r /\
-                FV N SUBSET X UNION RANK r /\ M == N ==>
-               (subterm X M p r = NONE <=> subterm X N p r = NONE)
+(* NOTE: Improved statements combining with (old) lameq_subterm_cong_none *)
+Theorem lameq_subterm_cong_lemma[local] :
+    !X. FINITE X ==>
+        !p M N r. FV M SUBSET X UNION RANK r /\
+                  FV N SUBSET X UNION RANK r /\ M == N
+             ==> (subterm X M p r = NONE <=> subterm X N p r = NONE) /\
+                  subterm X M p r <> NONE ==>
+                  subterm' X M p r == subterm' X N p r
 Proof
-    rpt STRIP_TAC
- >> Suff ‘subterm X M p r <> NONE <=> subterm X N p r <> NONE’ >- rw []
- >> Know ‘subterm X M p r <> NONE <=> p IN ltree_paths (BT' X M r)’
- >- (MATCH_MP_TAC (GSYM BT_ltree_paths_thm) >> art [])
- >> Rewr'
- >> Know ‘subterm X N p r <> NONE <=> p IN ltree_paths (BT' X N r)’
- >- (MATCH_MP_TAC (GSYM BT_ltree_paths_thm) >> art [])
- >> Rewr'
- >> PROVE_TAC [lameq_BT_cong]
-QED
-
-Theorem lameq_subterm_cong :
-    !p X M N r. FINITE X /\
-                FV M SUBSET X UNION RANK r /\
-                FV N SUBSET X UNION RANK r /\
-                M == N /\
-                subterm X M p r <> NONE /\
-                subterm X N p r <> NONE
-            ==> subterm' X M p r == subterm' X N p r
-Proof
-    Q.X_GEN_TAC ‘p’
- >> Cases_on ‘p = []’ >- rw []
- >> POP_ASSUM MP_TAC
- >> Q.ID_SPEC_TAC ‘p’
- >> Induct_on ‘p’ >- rw []
- >> RW_TAC std_ss []
+    NTAC 2 STRIP_TAC
+ >> Induct_on ‘p’ >- simp []
+ >> rpt GEN_TAC >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
- >- (‘unsolvable N’ by METIS_TAC [lameq_solvable_cong] \\
-     Cases_on ‘p’ >> fs [subterm_def])
- >> ‘solvable N’ by METIS_TAC [lameq_solvable_cong]
- >> Q.PAT_X_ASSUM ‘subterm X N (h::p) r <> NONE’ MP_TAC
- >> Q.PAT_X_ASSUM ‘subterm X M (h::p) r <> NONE’ MP_TAC
- >> RW_TAC std_ss [subterm_of_solvables]
- >> gs []
+ >- (‘unsolvable N’ by PROVE_TAC [lameq_solvable_cong] \\
+     simp [subterm_def])
+ >> ‘solvable N’ by PROVE_TAC [lameq_solvable_cong]
+ >> Q_TAC (UNBETA_TAC [subterm_def]) ‘subterm X M (h::p) r’
+ >> Q_TAC (UNBETA_TAC [subterm_def]) ‘subterm X N (h::p) r’
  >> Know ‘n = n' /\ vs = vs'’
  >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
      qunabbrevl_tac [‘n’, ‘n'’, ‘M0’, ‘M0'’] \\
@@ -1520,9 +1498,10 @@ Proof
  (* applying lameq_principal_hnf_thm' *)
  >> MP_TAC (Q.SPECL [‘r’, ‘X’, ‘M’, ‘N’, ‘M0’, ‘M0'’, ‘n’, ‘vs’, ‘M1’, ‘M1'’]
                      lameq_principal_hnf_thm') >> simp []
- >> RW_TAC std_ss [Abbr ‘m’, Abbr ‘m'’]
+ >> simp [Abbr ‘m’, Abbr ‘m'’]
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘n = LAMl_size M0'’ (ASSUME_TAC o SYM)
  (* preparing for hnf_children_FV_SUBSET *)
- >> qabbrev_tac ‘n = LAMl_size M0'’
  >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> ‘DISJOINT (set vs) (FV M0) /\ DISJOINT (set vs) (FV M0')’
@@ -1541,9 +1520,8 @@ Proof
  >> ‘args = Ms’ by rw [Abbr ‘Ms’]
  >> POP_ASSUM (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘args' = Ms'’ (fs o wrap o SYM)
- >> qabbrev_tac ‘m = LENGTH args'’
- >> T_TAC
- >> Cases_on ‘p = []’ >> fs []
+ >> qabbrev_tac ‘m = LENGTH args'’ >> T_TAC
+ >> Cases_on ‘h < m’ >> simp []
  (* final stage *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
  >> CONJ_TAC (* 2 subgoals *)
@@ -1553,6 +1531,17 @@ Proof
       (* goal 2 (of 2) *)
       MATCH_MP_TAC subterm_induction_lemma' \\
       qexistsl_tac [‘N’, ‘M0'’, ‘n’, ‘m’, ‘vs’, ‘M1'’] >> simp [] ]
+QED
+
+Theorem lameq_subterm_cong :
+    !X M N p r. FINITE X /\
+                FV M SUBSET X UNION RANK r /\
+                FV N SUBSET X UNION RANK r /\ M == N
+           ==> (subterm X M p r = NONE <=> subterm X N p r = NONE) /\
+                subterm X M p r <> NONE ==>
+                subterm' X M p r == subterm' X N p r
+Proof
+   PROVE_TAC [lameq_subterm_cong_lemma]
 QED
 
 (*****************************************************************************)
