@@ -96,6 +96,160 @@ Proof
  >> simp [GSYM BT_ltree_paths_thm]
 QED
 
+(* |- (VAR s -e-> t <=> F) /\
+      (t @@ u -e-> v <=>
+       (?t'. v = t' @@ u /\ t -e-> t') \/ ?u'. v = t @@ u' /\ u -e-> u') /\
+      (LAM v t -e-> u <=> (?t'. u = LAM v t' /\ t -e-> t') \/ eta (LAM v t) u)
+ *)
+Theorem cceta_rwt[local] =
+        LIST_CONJ ((map SPEC_ALL (CONJUNCTS cc_eta_thm)) @
+                   [SPEC_ALL cc_eta_LAM])
+
+Theorem hnf_cceta_appstar[local] :
+    !y Ms N. VAR y @* Ms -e-> N /\ Ms <> [] ==>
+             ?Ns. N = VAR y @* Ns /\ LENGTH Ns = LENGTH Ms /\
+                  !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns
+Proof
+    Q.X_GEN_TAC ‘y’
+ >> SNOC_INDUCT_TAC >> rw []
+ >> fs [cceta_rwt] (* 2 subgoals *)
+ >- (Cases_on ‘Ms = []’ >> fs [cceta_rwt] \\
+     rename1 ‘VAR y @* Ms -e-> M'’ \\
+     Q.PAT_X_ASSUM ‘!N. P’ (MP_TAC o (Q.SPEC ‘M'’)) \\
+     RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘SNOC x Ns’ >> rw [] \\
+    ‘i = LENGTH Ms \/ i < LENGTH Ms’ by rw []
+     >- (rw [EL_LENGTH_SNOC] \\
+         Q.PAT_X_ASSUM ‘LENGTH Ns = LENGTH Ms’ (REWRITE_TAC o wrap o SYM) \\
+         rw [EL_LENGTH_SNOC]) \\
+     rw [EL_SNOC])
+ (* stage work *)
+ >> Cases_on ‘Ms = []’ >> fs [cceta_rwt]
+ >- (rename1 ‘N = VAR y @@ N'’ \\
+     Q.EXISTS_TAC ‘[N']’ >> rw [])
+ >> rename1 ‘N = VAR y @* Ms @@ N'’
+ >> Q.EXISTS_TAC ‘SNOC N' Ms’
+ >> rw [appstar_SNOC]
+ >> ‘i = LENGTH Ms \/ i < LENGTH Ms’ by rw [] >- rw [EL_LENGTH_SNOC]
+ >> rw [EL_SNOC]
+QED
+
+Theorem cceta_LAM_rwt[local] :
+    LAM v t -e-> u <=>
+     (?t'. u = LAM v t' /\ t -e-> t') \/ (t = u @@ VAR v /\ v # u)
+Proof
+    rw [cceta_rwt, eta_def]
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 4) *)
+      DISJ1_TAC >> Q.EXISTS_TAC ‘t'’ >> art [],
+      (* goal 2 (of 4) *)
+      DISJ2_TAC \\
+      Cases_on ‘v = v'’ >> fs [] \\
+      gs [LAM_eq_thm] \\
+      MATCH_MP_TAC tpm_fresh >> art [],
+      (* goal 3 (of 4) *)
+      DISJ1_TAC >> Q.EXISTS_TAC ‘t'’ >> art [],
+      (* goal 4 (of 4) *)
+      DISJ2_TAC >> Q.EXISTS_TAC ‘v’ >> art [] ]
+QED
+
+(* LAMl (vs ++ [v]) (P @@ VAR v) -e-> LAMl vs P *)
+Theorem cceta_LAMl_rwt[local] :
+    !vs M N. LAMl vs M -e-> N <=>
+            (?M'. N = LAMl vs M' /\ M -e-> M') \/
+            (vs <> [] /\
+             ?P. M = P @@ VAR (LAST vs) /\ N = LAMl (FRONT vs) P /\
+                 LAST vs # P)
+Proof
+    SNOC_INDUCT_TAC >> rw []
+ >> KILL_TAC
+ >> reverse EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘LAM x M'’ >> rw [cceta_LAM_rwt])
+ >- (Q.EXISTS_TAC ‘P’ >> rw [cceta_LAM_rwt])
+ >> fs [cceta_LAM_rwt]
+QED
+
+Theorem hnf_cceta_cases[local] :
+    !Ms vs N. LAMl vs (VAR y @* Ms) -e-> N ==>
+             (?Ns. N = LAMl vs (VAR y @* Ns) /\
+                   LENGTH Ns = LENGTH Ms /\
+                  !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns) \/
+             (vs <> [] /\ Ms <> [] /\
+              N = LAMl (FRONT vs) (VAR y @* FRONT Ms) /\
+              LAST Ms = VAR (LAST vs))
+Proof
+    SNOC_INDUCT_TAC
+ >- (simp [] \\
+     SNOC_INDUCT_TAC >> rw [] >- fs [cceta_rwt] \\
+     fs [cceta_LAMl_rwt] \\
+     fs [cceta_LAM_rwt] \\
+     fs [cceta_rwt])
+ >> qx_genl_tac [‘P’, ‘vs’, ‘N’]
+ >> simp [appstar_SNOC]
+ >> qabbrev_tac ‘t = VAR y @* Ms’
+ >> rw [cceta_LAMl_rwt]
+ >> reverse (fs [Abbr ‘t’, cceta_rwt])
+ >- (DISJ1_TAC \\
+     rename1 ‘M' = VAR y @* Ms @@ N’ \\
+     Q.EXISTS_TAC ‘SNOC N Ms’ \\
+     rw [appstar_SNOC] \\
+     ‘i < LENGTH Ms \/ i = LENGTH Ms’ by simp [] >- simp [EL_SNOC] \\
+     simp [EL_LENGTH_SNOC])
+ >> Cases_on ‘Ms = []’ >- fs [cceta_rwt]
+ (* applying hnf_cceta_appstar *)
+ >> rename1 ‘VAR y @* Ms -e-> N’
+ >> MP_TAC (Q.SPECL [‘y’, ‘Ms’, ‘N’] hnf_cceta_appstar)
+ >> RW_TAC std_ss []
+ >> DISJ1_TAC
+ >> Q.EXISTS_TAC ‘SNOC P Ns’
+ >> rw [appstar_SNOC]
+ >> ‘i < LENGTH Ms \/ i = LENGTH Ms’ by simp [] >- simp [EL_SNOC]
+ >> simp [EL_LENGTH_SNOC]
+ >> Q.PAT_X_ASSUM ‘LENGTH Ns = LENGTH Ms’ (REWRITE_TAC o wrap o SYM)
+ >> simp [EL_LENGTH_SNOC]
+QED
+
+Theorem hnf_eta_reduction_cases :
+    !vs y Ms N. LAMl vs (VAR y @* Ms) -e->* N ==>
+                ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* (BUTLASTN n Ns)) /\
+                       n <= LENGTH vs /\ n <= LENGTH Ns /\
+                       LENGTH Ns = LENGTH Ms /\
+                       !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns
+Proof
+    NTAC 2 GEN_TAC
+ >> Suff ‘!M N. M -e->* N ==>
+               !vs Ms. M = LAMl vs (VAR y @* Ms) ==>
+                       ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* BUTLASTN n Ns) /\
+                              n <= LENGTH vs /\ n <= LENGTH Ns /\
+                              LENGTH Ns = LENGTH Ms /\
+                              !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns’
+ >- METIS_TAC []
+ >> HO_MATCH_MP_TAC RTC_INDUCT >> rw []
+ >- (qexistsl_tac [‘Ms’, ‘0’] >> simp [BUTLASTN])
+ >> Q.PAT_X_ASSUM ‘LAMl vs (VAR y @* Ms) -e-> M'’
+      (STRIP_ASSUME_TAC o MATCH_MP hnf_cceta_cases)
+ >- (Q.PAT_X_ASSUM ‘!vs Ms. M' = LAMl vs (VAR y @* Ms) ==> _’
+       (MP_TAC o Q.SPECL [‘vs’, ‘Ns’]) \\
+     RW_TAC std_ss [] \\
+     qexistsl_tac [‘Ns'’, ‘n’] >> rw [] \\
+     MATCH_MP_TAC etastar_TRANS \\
+     Q.EXISTS_TAC ‘EL i Ns’ >> simp [])
+ (* stage work *)
+ >> qabbrev_tac ‘vs' = FRONT vs’
+ >> qabbrev_tac ‘Ms' = FRONT Ms’
+ >> qabbrev_tac ‘v = LAST vs’
+ >> qabbrev_tac ‘M = LAST Ms’
+ >> ‘vs = SNOC v vs'’ by simp [Abbr ‘v’, Abbr ‘vs'’, SNOC_LAST_FRONT] >> POP_ORW
+ >> ‘Ms = SNOC M Ms'’ by simp [Abbr ‘M’, Abbr ‘Ms'’, SNOC_LAST_FRONT] >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘!vs Ms. P’ (MP_TAC o Q.SPECL [‘vs'’, ‘Ms'’]) >> rw []
+ >> qexistsl_tac [‘SNOC (VAR v) Ns’, ‘SUC n’]
+ >> rw [BUTLASTN]
+ >> ‘i < LENGTH Ms' \/ i = LENGTH Ms'’ by simp [] >- simp [EL_SNOC]
+ >> simp [EL_LENGTH_SNOC]
+ >> Q.PAT_X_ASSUM ‘LENGTH Ns = LENGTH Ms'’ (REWRITE_TAC o wrap o SYM)
+ >> simp [EL_LENGTH_SNOC]
+QED
+
 Theorem lameta_vsubterm_cong_lemma[local] :
     !X. FINITE X ==>
         !p M N r.

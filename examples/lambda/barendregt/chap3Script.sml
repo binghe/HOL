@@ -1740,6 +1740,11 @@ Theorem betastar_TRANS =
         RTC_TRANSITIVE |> Q.ISPEC ‘compat_closure beta’
                        |> REWRITE_RULE [transitive_def]
 
+(* |- !x y z. x -e->* y /\ y -e->* z ==> x -e->* z *)
+Theorem etastar_TRANS =
+        RTC_TRANSITIVE |> Q.ISPEC ‘compat_closure eta’
+                       |> REWRITE_RULE [transitive_def]
+
 Theorem lameq_imp_lameta :
     !M N. M == N ==> lameta M N
 Proof

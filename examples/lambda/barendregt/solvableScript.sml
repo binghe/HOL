@@ -1470,7 +1470,7 @@ QED
 Theorem lameq_principal_hnf' =
         lameq_principal_hnf |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
-Theorem hnf_ccbeta_appstar_rwt[local] :
+Theorem hnf_ccbeta_appstar[local] :
     !y Ms N. VAR y @* Ms -b-> N /\ Ms <> [] ==>
              ?Ns. N = VAR y @* Ns /\ LENGTH Ns = LENGTH Ms /\
                   !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns
@@ -1507,7 +1507,7 @@ Proof
  >> Suff ‘?Ns. M' = VAR y @* Ns /\ LENGTH Ns = LENGTH Ms /\
               !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns’
  >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
- >> MATCH_MP_TAC hnf_ccbeta_appstar_rwt
+ >> MATCH_MP_TAC hnf_ccbeta_appstar
  >> Cases_on ‘Ms = []’ >> fs [ccbeta_rwt]
 QED
 
@@ -1536,116 +1536,6 @@ Proof
  >> Q.EXISTS_TAC ‘Ns'’ >> rw []
  >> Q_TAC (TRANS_TAC betastar_TRANS) ‘EL i Ns’ >> simp []
 QED
-
-(* |- (VAR s -e-> t <=> F) /\
-      (t @@ u -e-> v <=>
-       (?t'. v = t' @@ u /\ t -e-> t') \/ ?u'. v = t @@ u' /\ u -e-> u') /\
-      (LAM v t -e-> u <=> (?t'. u = LAM v t' /\ t -e-> t') \/ eta (LAM v t) u)
- *)
-Theorem cceta_rwt[local] =
-        LIST_CONJ ((map SPEC_ALL (CONJUNCTS cc_eta_thm)) @
-                   [SPEC_ALL cc_eta_LAM])
-
-Theorem hnf_cceta_appstar_rwt[local] :
-    !y Ms N. VAR y @* Ms -e-> N /\ Ms <> [] ==>
-             ?Ns. N = VAR y @* Ns /\ LENGTH Ns = LENGTH Ms /\
-                  !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns
-Proof
-    Q.X_GEN_TAC ‘y’
- >> SNOC_INDUCT_TAC >> rw []
- >> fs [cceta_rwt] (* 2 subgoals *)
- >- (Cases_on ‘Ms = []’ >> fs [cceta_rwt] \\
-     rename1 ‘VAR y @* Ms -e-> M'’ \\
-     Q.PAT_X_ASSUM ‘!N. P’ (MP_TAC o (Q.SPEC ‘M'’)) \\
-     RW_TAC std_ss [] \\
-     Q.EXISTS_TAC ‘SNOC x Ns’ >> rw [] \\
-    ‘i = LENGTH Ms \/ i < LENGTH Ms’ by rw []
-     >- (rw [EL_LENGTH_SNOC] \\
-         Q.PAT_X_ASSUM ‘LENGTH Ns = LENGTH Ms’ (REWRITE_TAC o wrap o SYM) \\
-         rw [EL_LENGTH_SNOC]) \\
-     rw [EL_SNOC])
- (* stage work *)
- >> Cases_on ‘Ms = []’ >> fs [cceta_rwt]
- >- (rename1 ‘N = VAR y @@ N'’ \\
-     Q.EXISTS_TAC ‘[N']’ >> rw [])
- >> rename1 ‘N = VAR y @* Ms @@ N'’
- >> Q.EXISTS_TAC ‘SNOC N' Ms’
- >> rw [appstar_SNOC]
- >> ‘i = LENGTH Ms \/ i < LENGTH Ms’ by rw []
- >- rw [EL_LENGTH_SNOC]
- >> rw [EL_SNOC]
-QED
-
-Theorem cceta_LAM_rwt[local] :
-    LAM v t -e-> u <=>
-     (?t'. u = LAM v t' /\ t -e-> t') \/ (t = u @@ VAR v /\ v # u)
-Proof
-    rw [cceta_rwt, eta_def]
- >> EQ_TAC >> rw []
- >| [ (* goal 1 (of 4) *)
-      DISJ1_TAC >> Q.EXISTS_TAC ‘t'’ >> art [],
-      (* goal 2 (of 4) *)
-      DISJ2_TAC \\
-      Cases_on ‘v = v'’ >> fs [] \\
-      gs [LAM_eq_thm] \\
-      MATCH_MP_TAC tpm_fresh >> art [],
-      (* goal 3 (of 4) *)
-      DISJ1_TAC >> Q.EXISTS_TAC ‘t'’ >> art [],
-      (* goal 4 (of 4) *)
-      DISJ2_TAC >> Q.EXISTS_TAC ‘v’ >> art [] ]
-QED
-
-(* LAMl (vs ++ [v]) (P @@ VAR v) -e-> LAMl vs P *)
-Theorem cceta_LAMl_rwt[local] :
-    !vs M N. LAMl vs M -e-> N <=>
-            (?M'. N = LAMl vs M' /\ M -e-> M') \/
-            (vs <> [] /\
-             ?P. M = P @@ VAR (LAST vs) /\ N = LAMl (FRONT vs) P /\
-                 LAST vs # P)
-Proof
-    SNOC_INDUCT_TAC >> rw []
- >> KILL_TAC
- >> reverse EQ_TAC >> rw []
- >- (Q.EXISTS_TAC ‘LAM x M'’ >> art [] \\
-     rw [cceta_LAM_rwt])
- >- (Q.EXISTS_TAC ‘P’ \\
-     rw [cceta_LAM_rwt])
- >> fs [cceta_LAM_rwt]
-QED
-
-(* TODO
-Theorem hnf_cceta_cases :
-    !vs Ms N. LAMl vs (VAR y @* Ms) -e-> N ==>
-             (?Ns. N = LAMl vs (VAR y @* Ns) /\
-                   LENGTH Ns = LENGTH Ms /\
-                  !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns) \/
-             (Ms <> [] /\ N = LAMl (FRONT vs) (VAR y @* FRONT Ms) /\
-              LAST Ms = VAR (LAST vs))
-Proof
-
- >> Suff ‘?Ns. M' = VAR y @* Ns /\ LENGTH Ns = LENGTH Ms /\
-              !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns’
- >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
- >> MATCH_MP_TAC hnf_cceta_appstar_rwt
- >> Cases_on ‘Ms = []’ >> fs [ccbeta_rwt]
-QED
-
-(* LAMl (vs ++ [v]) (VAR y @* Ms ++ [VAR v]) -e-> LAMl vs (VAR y @* Ms) *)
-Theorem hnf_eta_reduction_cases :
-    !vs y Ms N. LAMl vs (VAR y @* Ms) -e->* N ==>
-                ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* (BUTLASTN n Ns)) /\
-                       LENGTH Ns = LENGTH Ms /\
-                       !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns
-Proof
-    Induct_on ‘RTC’
- >> CONJ_TAC
- >- (qx_genl_tac [‘N’, ‘vs’, ‘y’, ‘Ms’] >> rw [] \\
-     qexistsl_tac [‘Ms’, ‘0’] \\
-     simp [BUTLASTN])
- >> qx_genl_tac [‘P’, ‘Q’, ‘N’] >> rw []
- >> cheat
-QED
- *)
 
 Theorem lameq_principal_hnf_lemma_general :
     !X M N r. FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\
