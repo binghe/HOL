@@ -209,9 +209,12 @@ Proof
  >> simp [EL_LENGTH_SNOC]
 QED
 
-Theorem hnf_eta_reduction_cases :
+(* cf. hnf_betastar_cases, the case of eta-reduction is more complex than beta:
+   the tails of ‘vs’ and ‘Ms’ may get consumed (of the same length).
+ *)
+Theorem hnf_etastar_cases :
     !vs y Ms N. LAMl vs (VAR y @* Ms) -e->* N ==>
-                ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* (BUTLASTN n Ns)) /\
+                ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* BUTLASTN n Ns) /\
                        n <= LENGTH vs /\ n <= LENGTH Ns /\
                        LENGTH Ns = LENGTH Ms /\
                        !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns
