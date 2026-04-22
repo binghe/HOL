@@ -255,17 +255,25 @@ Proof
  >> simp [EL_LENGTH_SNOC]
 QED
 
-Theorem lameta_vsubterm_cong_lemma[local] :
-    !X. FINITE X ==>
+(* NOTE: cf. lameq_subterm_cong *)
+Theorem lameta_vsubterm_cong :
+    !X M N p r. FINITE X /\
+                FV M SUBSET X UNION RANK r /\
+                FV N SUBSET X UNION RANK r /\ M === N
+           ==> (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
+                vsubterm X M p r <> NONE ==>
+                vsubterm' X M p r === vsubterm' X N p r
+Proof
+  Suff
+   ‘!X. FINITE X ==>
         !p M N r.
            FV M SUBSET X UNION RANK r /\
            FV N SUBSET X UNION RANK r /\ M === N
           ==>
           (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
            vsubterm X M p r <> NONE ==>
-           vsubterm' X M p r === vsubterm' X N p r
-Proof
-    NTAC 2 STRIP_TAC
+           vsubterm' X M p r === vsubterm' X N p r’ >- METIS_TAC []
+ >> NTAC 2 STRIP_TAC
  >> Induct_on ‘p’ >- simp []
  >> rpt GEN_TAC >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
@@ -375,19 +383,25 @@ Proof
    P'  = LAMl vs' (VAR y' @* Ns')   (EL i args' -b->* EL i Ns')
    M0' = LAMl vs' (VAR y' @* args')
  *)
+ >> FULL_SIMP_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘P  = _’ K_TAC
+ >> Q.PAT_X_ASSUM ‘P' = _’ K_TAC
+ (* applying hnf_etastar_cases *)
+ >> Q.PAT_X_ASSUM ‘LAMl vs (VAR y @* Ns) -e->* Z’
+      (MP_TAC o MATCH_MP hnf_etastar_cases)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ (Q.X_CHOOSE_THEN ‘Ms’ STRIP_ASSUME_TAC))
+ >> Q.PAT_X_ASSUM ‘LAMl vs' (VAR y' @* Ns') -e->* Z’
+      (MP_TAC o MATCH_MP hnf_etastar_cases)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i'’ (Q.X_CHOOSE_THEN ‘Ms'’ STRIP_ASSUME_TAC))
+(*
+   M0  = LAMl vs  (VAR y  @* args)
+   P   = LAMl vs  (VAR y  @* Ns)    (EL i args  -b->* EL i Ns)
+   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ms )    EL i Ns  -e->* EL i Ms
+   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ms')    EL i Ns' -e->* EL i Ms'
+   P'  = LAMl vs' (VAR y' @* Ns')   (EL i args' -b->* EL i Ns')
+   M0' = LAMl vs' (VAR y' @* args')
+ *)
  >> cheat
-QED
-
-(* NOTE: cf. lameq_subterm_cong *)
-Theorem lameta_vsubterm_cong :
-    !X M N p r. FINITE X /\
-                FV M SUBSET X UNION RANK r /\
-                FV N SUBSET X UNION RANK r /\ M === N
-           ==> (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
-                vsubterm X M p r <> NONE ==>
-                vsubterm' X M p r === vsubterm' X N p r
-Proof
-    PROVE_TAC [lameta_vsubterm_cong_lemma]
 QED
 
 val _ = html_theory "separability";
