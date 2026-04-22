@@ -214,27 +214,29 @@ QED
  *)
 Theorem hnf_etastar_cases :
     !vs y Ms N. LAMl vs (VAR y @* Ms) -e->* N ==>
-                ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* BUTLASTN n Ns) /\
+                ?n Ns. N = LAMl (BUTLASTN n vs) (VAR y @* BUTLASTN n Ns) /\
                        n <= LENGTH vs /\ n <= LENGTH Ns /\
                        LENGTH Ns = LENGTH Ms /\
+                       LASTN n Ns = MAP VAR (LASTN n vs) /\
                        !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns
 Proof
     NTAC 2 GEN_TAC
  >> Suff ‘!M N. M -e->* N ==>
                !vs Ms. M = LAMl vs (VAR y @* Ms) ==>
-                       ?Ns n. N = LAMl (BUTLASTN n vs) (VAR y @* BUTLASTN n Ns) /\
+                       ?n Ns. N = LAMl (BUTLASTN n vs) (VAR y @* BUTLASTN n Ns) /\
                               n <= LENGTH vs /\ n <= LENGTH Ns /\
                               LENGTH Ns = LENGTH Ms /\
+                              LASTN n Ns = MAP VAR (LASTN n vs) /\
                               !i. i < LENGTH Ms ==> EL i Ms -e->* EL i Ns’
  >- METIS_TAC []
  >> HO_MATCH_MP_TAC RTC_INDUCT >> rw []
- >- (qexistsl_tac [‘Ms’, ‘0’] >> simp [BUTLASTN])
+ >- (qexistsl_tac [‘0’, ‘Ms’] \\
+     simp [BUTLASTN, LASTN])
  >> Q.PAT_X_ASSUM ‘LAMl vs (VAR y @* Ms) -e-> M'’
       (STRIP_ASSUME_TAC o MATCH_MP hnf_cceta_cases)
  >- (Q.PAT_X_ASSUM ‘!vs Ms. M' = LAMl vs (VAR y @* Ms) ==> _’
-       (MP_TAC o Q.SPECL [‘vs’, ‘Ns’]) \\
-     RW_TAC std_ss [] \\
-     qexistsl_tac [‘Ns'’, ‘n’] >> rw [] \\
+       (MP_TAC o Q.SPECL [‘vs’, ‘Ns’]) >> rw [] \\
+     qexistsl_tac [‘n’, ‘Ns'’] >> rw [] \\
      MATCH_MP_TAC etastar_TRANS \\
      Q.EXISTS_TAC ‘EL i Ns’ >> simp [])
  (* stage work *)
@@ -245,8 +247,8 @@ Proof
  >> ‘vs = SNOC v vs'’ by simp [Abbr ‘v’, Abbr ‘vs'’, SNOC_LAST_FRONT] >> POP_ORW
  >> ‘Ms = SNOC M Ms'’ by simp [Abbr ‘M’, Abbr ‘Ms'’, SNOC_LAST_FRONT] >> POP_ORW
  >> Q.PAT_X_ASSUM ‘!vs Ms. P’ (MP_TAC o Q.SPECL [‘vs'’, ‘Ms'’]) >> rw []
- >> qexistsl_tac [‘SNOC (VAR v) Ns’, ‘SUC n’]
- >> rw [BUTLASTN]
+ >> qexistsl_tac [‘SUC n’, ‘SNOC (VAR v) Ns’]
+ >> rw [BUTLASTN, LASTN, MAP_SNOC]
  >> ‘i < LENGTH Ms' \/ i = LENGTH Ms'’ by simp [] >- simp [EL_SNOC]
  >> simp [EL_LENGTH_SNOC]
  >> Q.PAT_X_ASSUM ‘LENGTH Ns = LENGTH Ms'’ (REWRITE_TAC o wrap o SYM)
