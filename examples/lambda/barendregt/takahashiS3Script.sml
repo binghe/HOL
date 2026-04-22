@@ -670,17 +670,17 @@ Proof
   metis_tac[has_bnf_thm, takahashi_3_6_0, RTC_CASES_RTC_TWICE]
 QED
 
-Theorem compact_closure_eta_imp_has_bnf :
+Theorem cceta_imp_has_bnf[local] :
     !P Q. compat_closure eta P Q /\ has_bnf Q ==> has_bnf P
 Proof
     PROVE_TAC [takahashi_3_6, cc_eta_peta]
 QED
 
-Theorem reduction_eta_imp_has_bnf :
+Theorem etastar_imp_has_bnf :
     !P Q. reduction eta P Q /\ has_bnf Q ==> has_bnf P
 Proof
     Induct_on ‘RTC’
- >> METIS_TAC [RTC_RULES, compact_closure_eta_imp_has_bnf]
+ >> METIS_TAC [RTC_RULES, cceta_imp_has_bnf]
 QED
 
 Theorem appstar_peta:

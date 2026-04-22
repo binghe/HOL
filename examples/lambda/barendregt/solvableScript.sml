@@ -1410,7 +1410,7 @@ Proof
  >> DISCH_THEN (fs o wrap)
  >> ‘?P. N @* Ns -b->* P /\ reduction eta P I’ by METIS_TAC [takahashi_3_5]
  >> Know ‘has_bnf P’
- >- (MATCH_MP_TAC reduction_eta_imp_has_bnf \\
+ >- (MATCH_MP_TAC etastar_imp_has_bnf \\
      Q.EXISTS_TAC ‘I’ >> art [] \\
      MATCH_MP_TAC bnf_has_bnf >> simp [])
  >> simp [has_bnf_thm]

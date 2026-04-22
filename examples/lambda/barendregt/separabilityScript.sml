@@ -5,12 +5,12 @@
 
 Theory separability
 Ancestors
-  combin option arithmetic pred_set list rich_list llist ltree relation iterate
-  topology nomset basic_swap term appFOLDL chap2 chap3 chap4 horeduction
+  combin option arithmetic pred_set list rich_list llist ltree relation
+  topology nomset basic_swap term appFOLDL chap2 chap3 horeduction
   head_reduction standardisation solvable boehm takahashiS3 lameta_complete
 Libs
-  hurdUtils tautLib numLib listLib NEWLib reductionEval
-  head_reductionLib monadsyntax
+  hurdUtils tautLib numLib listLib NEWLib reductionEval head_reductionLib
+  monadsyntax
 
 (* enable basic monad support *)
 val _ = enable_monadsyntax ();
@@ -224,21 +224,20 @@ Proof
    P'  = LAMl vs' (VAR y' @* Ns')   (EL i args' -b->* EL i Ns')
    M0' = LAMl vs' (VAR y' @* args')
  *)
- >> FULL_SIMP_TAC std_ss []
- >> Q.PAT_X_ASSUM ‘P  = _’ K_TAC
- >> Q.PAT_X_ASSUM ‘P' = _’ K_TAC
  (* applying hnf_etastar_cases *)
- >> Q.PAT_X_ASSUM ‘LAMl vs (VAR y @* Ns) -e->* Z’
-      (MP_TAC o MATCH_MP hnf_etastar_cases)
+ >> Q.PAT_X_ASSUM ‘P -e->* Z’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘P = _’ (REWRITE_TAC o wrap)
+ >> DISCH_THEN (MP_TAC o MATCH_MP hnf_etastar_cases)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ (Q.X_CHOOSE_THEN ‘Ms’ STRIP_ASSUME_TAC))
- >> Q.PAT_X_ASSUM ‘LAMl vs' (VAR y' @* Ns') -e->* Z’
-      (MP_TAC o MATCH_MP hnf_etastar_cases)
+ >> Q.PAT_X_ASSUM ‘P' -e->* Z’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘P' = _’ (REWRITE_TAC o wrap)
+ >> DISCH_THEN (MP_TAC o MATCH_MP hnf_etastar_cases)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i'’ (Q.X_CHOOSE_THEN ‘Ms'’ STRIP_ASSUME_TAC))
 (*
    M0  = LAMl vs  (VAR y  @* args)
-   P   = LAMl vs  (VAR y  @* Ns)                  (EL i args -b->* EL i Ns)
-   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ms )    EL i Ns   -e->* EL i Ms
-   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ms')    EL i Ns'  -e->* EL i Ms'
+   P   = LAMl vs  (VAR y  @* Ns)                  (EL i args -b->* EL i Ns )
+   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ms )   (EL i Ns   -e->* EL i Ms )
+   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ms')   (EL i Ns'  -e->* EL i Ms')
    P'  = LAMl vs' (VAR y' @* Ns')                 (EL i args'-b->* EL i Ns')
    M0' = LAMl vs' (VAR y' @* args')
  *)
