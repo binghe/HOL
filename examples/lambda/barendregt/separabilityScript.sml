@@ -179,17 +179,6 @@ Proof
     |       |        /
     N -h->* M0'-be->*
   *)
- >> ‘?P.  M0  -b->* P  /\ P  -e->* Z’ by METIS_TAC [takahashi_3_5]
- >> ‘?P'. M0' -b->* P' /\ P' -e->* Z’ by METIS_TAC [takahashi_3_5]
- >> Q.PAT_X_ASSUM ‘M0  -be->* Z’ K_TAC
- >> Q.PAT_X_ASSUM ‘M0' -be->* Z’ K_TAC
- (*
-    M -h->* M0 --b->* P -e->*
-    |       |                \
-   ===     ===                Z
-    |       |                /
-    N -h->* M0'--b->* P'-e->*
-  *)
  >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma']
@@ -212,33 +201,23 @@ Proof
  >> ‘args = Ms’ by rw [Abbr ‘Ms’]
  >> POP_ASSUM (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘args' = Ms'’ (fs o wrap o SYM) >> T_TAC
- (* applying hnf_betastar_cases *)
- >> Q.PAT_X_ASSUM ‘LAMl vs (VAR y @* args) -b->* P’
-      (STRIP_ASSUME_TAC o MATCH_MP hnf_betastar_cases) (* NS *)
- >> Q.PAT_X_ASSUM ‘LAMl vs' (VAR y' @* args') -b->* P'’
-      (STRIP_ASSUME_TAC o MATCH_MP hnf_betastar_cases) (* NS' *)
-(*
+ (* applying hnf_bestar_cases *)
+ >> Q.PAT_ASSUM ‘LAMl vs  (VAR y  @* args)  -be->* Z’
+      (MP_TAC o MATCH_MP hnf_bestar_cases)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) (* i and Ns *)
+ >> Q.PAT_ASSUM ‘LAMl vs' (VAR y' @* args') -be->* Z’
+      (MP_TAC o MATCH_MP hnf_bestar_cases)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i'’ STRIP_ASSUME_TAC) (* i' and Ns' *)
+ (*
+    M -h->* M0 -be->*
+    |       |        \
+   ===     ===        Z
+    |       |        /
+    N -h->* M0'-be->*
+
    M0  = LAMl vs  (VAR y  @* args)
-   P   = LAMl vs  (VAR y  @* Ns)    (EL i args  -b->* EL i Ns)
-   Z   = LAMl _   (VAR _  @* _)
-   P'  = LAMl vs' (VAR y' @* Ns')   (EL i args' -b->* EL i Ns')
-   M0' = LAMl vs' (VAR y' @* args')
- *)
- (* applying hnf_etastar_cases *)
- >> Q.PAT_X_ASSUM ‘P -e->* Z’ MP_TAC
- >> Q.PAT_X_ASSUM ‘P = _’ (REWRITE_TAC o wrap)
- >> DISCH_THEN (MP_TAC o MATCH_MP hnf_etastar_cases)
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ (Q.X_CHOOSE_THEN ‘Ms’ STRIP_ASSUME_TAC))
- >> Q.PAT_X_ASSUM ‘P' -e->* Z’ MP_TAC
- >> Q.PAT_X_ASSUM ‘P' = _’ (REWRITE_TAC o wrap)
- >> DISCH_THEN (MP_TAC o MATCH_MP hnf_etastar_cases)
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i'’ (Q.X_CHOOSE_THEN ‘Ms'’ STRIP_ASSUME_TAC))
-(*
-   M0  = LAMl vs  (VAR y  @* args)
-   P   = LAMl vs  (VAR y  @* Ns)                  (EL i args -b->* EL i Ns )
-   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ms )   (EL i Ns   -e->* EL i Ms )
-   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ms')   (EL i Ns'  -e->* EL i Ms')
-   P'  = LAMl vs' (VAR y' @* Ns')                 (EL i args'-b->* EL i Ns')
+   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ns )   (EL i args -e->* EL i Ns )
+   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ns')   (EL i args'-e->* EL i Ns')
    M0' = LAMl vs' (VAR y' @* args')
  *)
  >> cheat
