@@ -96,24 +96,20 @@ Proof
  >> simp [GSYM BT_ltree_paths_thm]
 QED
 
-(* NOTE: cf. lameq_subterm_cong *)
+(* cf. lameq_subterm_cong *)
 Theorem lameta_vsubterm_cong :
-    !X M N p r. FINITE X /\
-                FV M SUBSET X UNION RANK r /\
-                FV N SUBSET X UNION RANK r /\ M === N
+    !X M N p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                            FV N SUBSET X UNION RANK r /\ M === N
            ==> (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
                 vsubterm X M p r <> NONE ==>
                 vsubterm' X M p r === vsubterm' X N p r
 Proof
-  Suff
-   ‘!X. FINITE X ==>
-        !p M N r.
-           FV M SUBSET X UNION RANK r /\
-           FV N SUBSET X UNION RANK r /\ M === N
-          ==>
-          (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
-           vsubterm X M p r <> NONE ==>
-           vsubterm' X M p r === vsubterm' X N p r’ >- METIS_TAC []
+    Suff ‘!X. FINITE X ==>
+              !p M N r. FV M SUBSET X UNION RANK r /\
+                        FV N SUBSET X UNION RANK r /\ M === N
+          ==> (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
+               vsubterm X M p r <> NONE ==>
+               vsubterm' X M p r === vsubterm' X N p r’ >- METIS_TAC []
  >> NTAC 2 STRIP_TAC
  >> Induct_on ‘p’ >- simp []
  >> rpt GEN_TAC >> STRIP_TAC
@@ -195,19 +191,19 @@ Proof
  >> Q.PAT_X_ASSUM ‘DISJOINT (set vs') (FV M0')’ K_TAC
  >> ‘TAKE (LAMl_size M0') vs' = vs'’ by rw []
  >> POP_ASSUM (rfs o wrap)
- >> qunabbrevl_tac [‘M1’, ‘M1'’, ‘M2’, ‘M2'’]
- >> qabbrev_tac ‘M1  = principal_hnf (M0  @* MAP VAR vs)’
- >> qabbrev_tac ‘M1' = principal_hnf (M0' @* MAP VAR vs')’
- >> ‘args = Ms’ by rw [Abbr ‘Ms’]
- >> POP_ASSUM (fs o wrap o SYM)
- >> Q.PAT_X_ASSUM ‘args' = Ms'’ (fs o wrap o SYM) >> T_TAC
+ (* eliminating Ms and Ms' *)
+ >> ‘Ms  = args’  by rw [Abbr ‘Ms’]  >> POP_ASSUM (rfs o wrap)
+ >> ‘Ms' = args'’ by rw [Abbr ‘Ms'’] >> POP_ASSUM (rfs o wrap)
+ >> qunabbrevl_tac [‘Ms’, ‘Ms'’]
+ >> Q.PAT_X_ASSUM ‘M0  = _’ (ASSUME_TAC o SYM)
+ >> Q.PAT_X_ASSUM ‘M0' = _’ (ASSUME_TAC o SYM)
  (* applying hnf_bestar_cases *)
- >> Q.PAT_ASSUM ‘LAMl vs  (VAR y  @* args)  -be->* Z’
-      (MP_TAC o MATCH_MP hnf_bestar_cases)
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) (* i and Ns *)
- >> Q.PAT_ASSUM ‘LAMl vs' (VAR y' @* args') -be->* Z’
-      (MP_TAC o MATCH_MP hnf_bestar_cases)
+ >> MP_TAC (Q.SPECL [‘vs’,  ‘y’,  ‘args’,  ‘Z’] hnf_bestar_cases) >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’  STRIP_ASSUME_TAC) (* i  and Ns *)
+ >> Q.PAT_X_ASSUM ‘Z = _’ (ASSUME_TAC o SYM)
+ >> MP_TAC (Q.SPECL [‘vs'’, ‘y'’, ‘args'’, ‘Z’] hnf_bestar_cases) >> simp []
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i'’ STRIP_ASSUME_TAC) (* i' and Ns' *)
+ >> Q.PAT_X_ASSUM ‘Z = _’ (ASSUME_TAC o SYM)
  (*
     M -h->* M0 -be->*
     |       |        \
@@ -216,10 +212,19 @@ Proof
     N -h->* M0'-be->*
 
    M0  = LAMl vs  (VAR y  @* args)
-   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ns )   (EL i args -e->* EL i Ns )
-   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ns')   (EL i args'-e->* EL i Ns')
+   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ns ) (EL i args -e->* EL i Ns )
+   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ns') (EL i args'-e->* EL i Ns')
    M0' = LAMl vs' (VAR y' @* args')
  *)
+ >> Know ‘n' - i' = n - i’
+ >- (Q.PAT_X_ASSUM ‘_ = Z’ (MP_TAC o AP_TERM “LAMl_size”) \\
+     REWRITE_TAC [LAMl_size_hnf] \\
+     simp [LENGTH_BUTLASTN] >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘_ = Z’ (MP_TAC o AP_TERM “LAMl_size”) \\
+     REWRITE_TAC [LAMl_size_hnf] \\
+     simp [LENGTH_BUTLASTN])
+ >> DISCH_TAC
+ (* stage work *)
  >> cheat
 QED
 
