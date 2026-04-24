@@ -10,7 +10,7 @@ Ancestors
   head_reduction standardisation solvable boehm takahashiS3 lameta_complete
 Libs
   hurdUtils tautLib numLib listLib NEWLib reductionEval head_reductionLib
-  monadsyntax
+  monadsyntax intLib
 
 (* enable basic monad support *)
 val _ = enable_monadsyntax ();
@@ -212,8 +212,8 @@ Proof
     N -h->* M0'-be->*
 
    M0  = LAMl vs  (VAR y  @* args)
-   Z   = LAMl (BUTLASTN i  vs ) (VAR y  @* Ns ) (EL i args -e->* EL i Ns )
-   Z   = LAMl (BUTLASTN i' vs') (VAR y' @* Ns') (EL i args'-e->* EL i Ns')
+   Z   = LAMl (TAKE (n - i) vs)  (VAR y  @* (TAKE (m - i) Ns)
+   Z   = LAMl (TAKE (n'-i') vs') (VAR y' @* (TAKE (m'-i') Ns')
    M0' = LAMl vs' (VAR y' @* args')
  *)
  >> Know ‘n' - i' = n - i’
@@ -225,7 +225,85 @@ Proof
      simp [LENGTH_BUTLASTN])
  >> DISCH_TAC
  (* stage work *)
- >> cheat
+ >> gs [BUTLASTN_TAKE_UNCOND, LASTN_DROP_UNCOND]
+ >> qabbrev_tac ‘n_max = SUC (MAX n n' + MAX j j')’
+ >> Know ‘n <= n_max /\ n' <= n_max’
+ >- (simp [Abbr ‘n_max’] >> intLib.ARITH_TAC)
+ >> STRIP_TAC
+ >> Q_TAC (RNEWS_TAC (“xs :string list”, “r :num”, “n_max :num”)) ‘X’
+ (* applying TAKE_RNEWS (and TAKE_TAKE) *)
+ >> Know ‘TAKE (n - i) vs = TAKE (n - i) xs’
+ >- (‘vs = TAKE n xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+     irule TAKE_TAKE >> simp [])
+ >> DISCH_THEN (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘LAMl (TAKE (n - i) vs') _ = Z’ MP_TAC
+ >> Know ‘TAKE (n' - i') vs' = TAKE (n' - i') xs’
+ >- (‘vs' = TAKE n' xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+     irule TAKE_TAKE >> simp [])
+ >> simp [] >> DISCH_THEN K_TAC
+ >> Q.PAT_X_ASSUM ‘LAMl (TAKE (n - i) xs) _ = Z’ (simp o wrap o SYM)
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘y' = y’ (fs o wrap)
+ >> Know ‘m' - i' = m - i’
+ >- (POP_ASSUM (MP_TAC o AP_TERM “LENGTH :term list -> num”) \\
+     simp [])
+ >> DISCH_TAC
+ >> Know ‘DROP (n - i) vs = TAKE (n - (n - i)) (DROP (n - i) xs)’
+ >- (‘vs = TAKE n xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+     REWRITE_TAC [DROP_TAKE])
+ >> simp [] >> DISCH_THEN (fs o wrap)
+ >> Know ‘DROP (n' - i') vs' = TAKE (n' - (n' - i')) (DROP (n' - i') xs)’
+ >- (‘vs' = TAKE n' xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+     REWRITE_TAC [DROP_TAKE])
+ >> ‘n' - (n' - i') = i'’ by simp [] >> POP_ORW
+ >> simp [] >> DISCH_THEN (fs o wrap)
+ >> qabbrev_tac ‘xs2 = DROP (n - i) xs’
+ (* stage work *)
+ >> qunabbrevl_tac [‘M2’, ‘M2'’]
+ >> Cases_on ‘h < m’ >> Cases_on ‘h < m'’ >> simp [] (* 4 subgoals *)
+ >| [ (* goal 1 (of 4) *)
+      Q_TAC (TRANS_TAC lameta_TRANS) ‘EL h Ns’ \\
+      CONJ_TAC >- simp [bestar_lameta] \\
+      Suff ‘EL h Ns = EL h Ns'’
+      >- (Rewr' \\
+          MATCH_MP_TAC lameta_SYM >> simp [bestar_lameta]) \\
+   (* 0       h1       h2  m     m'
+      |<------------>+-i-->|     |  Ns
+      |<------------>+-----i'--->|  Ns'
+                     |
+                   m - i (= m' - i')
+    *)
+      Cases_on ‘h < m - i’
+      >- (Q.PAT_X_ASSUM ‘TAKE (m - i) Ns' = TAKE (m - i) Ns’ MP_TAC \\
+          simp [LIST_EQ_REWRITE, EL_TAKE]) \\
+      qabbrev_tac ‘m_i = m - i’ \\
+      REV_FULL_SIMP_TAC std_ss [NOT_LESS] \\
+     ‘h = h - m_i + m_i’ by simp [] >> POP_ORW \\
+      Know ‘EL (h - m_i + m_i) Ns = EL (h - m_i) (DROP m_i Ns)’
+      >- (SYM_TAC >> MATCH_MP_TAC EL_DROP >> simp []) >> Rewr' \\
+      Know ‘EL (h - m_i + m_i) Ns' = EL (h - m_i) (DROP m_i Ns')’
+      >- (SYM_TAC >> MATCH_MP_TAC EL_DROP >> simp []) >> Rewr' \\
+      ASM_SIMP_TAC std_ss [] \\
+     ‘h - m_i < i /\ h - m_i < i'’ by simp [Abbr ‘m_i’] \\
+      qabbrev_tac ‘l = TAKE i xs2’ \\
+      qabbrev_tac ‘l' = TAKE i' xs2’ \\
+      Know ‘LENGTH l = i’
+      >- (simp [Abbr ‘l’] \\
+          MATCH_MP_TAC LENGTH_TAKE \\
+          simp [Abbr ‘xs2’, LENGTH_DROP]) >> DISCH_TAC \\
+      Know ‘LENGTH l' = i'’
+      >- (simp [Abbr ‘l'’] \\
+          MATCH_MP_TAC LENGTH_TAKE \\
+          simp [Abbr ‘xs2’, LENGTH_DROP]) >> DISCH_TAC \\
+      simp [EL_MAP] \\
+      simp [Abbr ‘l’, Abbr ‘l'’, EL_TAKE],
+      (* goal 2 (of 4) *)
+      REV_FULL_SIMP_TAC std_ss [NOT_LESS] \\
+      cheat,
+      (* goal 3 (of 4) *)
+      cheat,
+      (* goal 4 (of 4) *)
+      cheat ]
 QED
 
 val _ = html_theory "separability";
