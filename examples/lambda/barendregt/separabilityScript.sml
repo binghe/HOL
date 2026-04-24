@@ -101,15 +101,15 @@ Theorem lameta_vsubterm_cong :
     !X M N p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
                             FV N SUBSET X UNION RANK r /\ M === N
            ==> (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
-                vsubterm X M p r <> NONE ==>
-                vsubterm' X M p r === vsubterm' X N p r
+               (vsubterm X M p r <> NONE ==>
+                vsubterm' X M p r === vsubterm' X N p r)
 Proof
     Suff ‘!X. FINITE X ==>
               !p M N r. FV M SUBSET X UNION RANK r /\
                         FV N SUBSET X UNION RANK r /\ M === N
           ==> (vsubterm X M p r = NONE <=> vsubterm X N p r = NONE) /\
-               vsubterm X M p r <> NONE ==>
-               vsubterm' X M p r === vsubterm' X N p r’ >- METIS_TAC []
+              (vsubterm X M p r <> NONE ==>
+               vsubterm' X M p r === vsubterm' X N p r)’ >- METIS_TAC []
  >> NTAC 2 STRIP_TAC
  >> Induct_on ‘p’ >- simp []
  >> rpt GEN_TAC >> STRIP_TAC
