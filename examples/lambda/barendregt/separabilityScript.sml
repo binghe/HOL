@@ -299,10 +299,89 @@ Proof
       simp [Abbr ‘l’, Abbr ‘l'’, EL_TAKE],
       (* goal 2 (of 4) *)
       REV_FULL_SIMP_TAC std_ss [NOT_LESS] \\
-      cheat,
+   (* 0                    m'   h   m
+      |<------------>+-i'->|    z'  |  Ns'
+      |<------------>+------i------>|  Ns
+                     |
+                   m - i (= m' - i')
+    *)
+     ‘j = 0’ by simp [Abbr ‘j’] \\
+      POP_ASSUM (rfs o wrap) \\
+      qunabbrevl_tac [‘j’, ‘zs’, ‘z’] \\
+      Suff ‘VAR z' = EL h Ns’ >- (Rewr' >> simp [bestar_lameta]) \\
+      qabbrev_tac ‘m_i = m - i’ \\
+     ‘h = h - m_i + m_i’ by simp [] >> POP_ORW \\
+      Know ‘EL (h - m_i + m_i) Ns = EL (h - m_i) (DROP m_i Ns)’
+      >- (SYM_TAC >> MATCH_MP_TAC EL_DROP >> simp []) >> Rewr' \\
+      ASM_SIMP_TAC std_ss [] \\
+     ‘h - m_i < i’ by simp [Abbr ‘m_i’] \\
+      qabbrev_tac ‘l = TAKE i xs2’ \\
+      Know ‘LENGTH l = i’
+      >- (simp [Abbr ‘l’] \\
+          MATCH_MP_TAC LENGTH_TAKE \\
+          simp [Abbr ‘xs2’, LENGTH_DROP]) >> DISCH_TAC \\
+      simp [EL_MAP] \\
+      simp [Abbr ‘l’, EL_TAKE, Abbr ‘z'’] \\
+      POP_ASSUM K_TAC \\
+      Know ‘n' + SUC j' <= n_max’
+      >- (simp [Abbr ‘n_max’] \\
+          intLib.ARITH_TAC) >> DISCH_TAC \\
+      qunabbrev_tac ‘zs'’ \\
+      Q_TAC (RNEWS_TAC (“zs' :string list”, “r :num”, “n' + SUC j'”)) ‘X’ \\
+     ‘zs' <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0] \\
+      simp [LAST_EL] \\
+     ‘PRE (n' + SUC j') = n' + j'’ by intLib.ARITH_TAC >> POP_ORW \\
+     ‘zs' = TAKE (n' + SUC j') xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+      simp [EL_TAKE] \\
+      simp [Abbr ‘xs2’, EL_DROP] \\
+     ‘h + n - (i + m_i) = h + (n' - i') - (m' - i')’ by simp [Abbr ‘m_i’] \\
+      POP_ORW \\
+      qunabbrev_tac ‘m_i’ \\
+     ‘h + (n' - i') - (m' - i') = h + n' - m'’ by simp [] >> POP_ORW \\
+      simp [Abbr ‘j'’],
       (* goal 3 (of 4) *)
-      cheat,
+      REV_FULL_SIMP_TAC std_ss [NOT_LESS] \\
+   (* 0                    m    h   m'
+      |<------------>+-i'->|    z   |  Ns
+      |<------------>+------i------>|  Ns'
+                     |
+                   m - i (= m' - i')
+    *)
+     ‘j' = 0’ by simp [Abbr ‘j'’] \\
+      POP_ASSUM (rfs o wrap) \\
+      qunabbrevl_tac [‘j'’, ‘zs'’, ‘z'’] \\
+      Suff ‘VAR z = EL h Ns'’
+      >- (Rewr' \\
+          MATCH_MP_TAC lameta_SYM >> simp [bestar_lameta]) \\
+      qabbrev_tac ‘m_i = m - i’ \\
+     ‘m_i <= h’ by simp [Abbr ‘m_i’] \\
+     ‘h = h - m_i + m_i’ by simp [] >> POP_ORW \\
+      Know ‘EL (h - m_i + m_i) Ns' = EL (h - m_i) (DROP m_i Ns')’
+      >- (SYM_TAC >> MATCH_MP_TAC EL_DROP >> simp []) >> Rewr' \\
+      ASM_SIMP_TAC std_ss [] \\
+     ‘h - m_i < i'’ by simp [Abbr ‘m_i’] \\
+      qabbrev_tac ‘l = TAKE i' xs2’ \\
+      Know ‘LENGTH l = i'’
+      >- (simp [Abbr ‘l’] \\
+          MATCH_MP_TAC LENGTH_TAKE \\
+          simp [Abbr ‘xs2’, LENGTH_DROP]) >> DISCH_TAC \\
+      simp [EL_MAP] \\
+      simp [Abbr ‘l’, EL_TAKE, Abbr ‘z’] \\
+      POP_ASSUM K_TAC \\
+      Know ‘n + SUC j <= n_max’
+      >- (simp [Abbr ‘n_max’] \\
+          intLib.ARITH_TAC) >> DISCH_TAC \\
+      qunabbrev_tac ‘zs’ \\
+      Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n + SUC j”)) ‘X’ \\
+     ‘zs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0] \\
+      simp [LAST_EL] \\
+     ‘PRE (n + SUC j) = n + j’ by intLib.ARITH_TAC >> POP_ORW \\
+     ‘zs = TAKE (n + SUC j) xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+      simp [EL_TAKE] \\
+      simp [Abbr ‘xs2’, EL_DROP] \\
+      simp [Abbr ‘j’, Abbr ‘m_i’],
       (* goal 4 (of 4) *)
+      Suff ‘VAR z = VAR z'’ >- simp [lameta_REFL] \\
       cheat ]
 QED
 
