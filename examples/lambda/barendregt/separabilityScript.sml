@@ -382,7 +382,43 @@ Proof
       simp [Abbr ‘j’, Abbr ‘m_i’],
       (* goal 4 (of 4) *)
       Suff ‘VAR z = VAR z'’ >- simp [lameta_REFL] \\
-      cheat ]
+      REV_FULL_SIMP_TAC std_ss [NOT_LESS] \\
+   (* 0                    m        m'  h
+      |<------------>+-i'->|        |   z   Ns
+      |<------------>+------i------>|   z'  Ns'
+                     |
+                   m - i (= m' - i')
+    *)
+      qunabbrev_tac ‘zs’ \\
+      Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n + SUC j”)) ‘X’ \\
+     ‘zs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0] \\
+      qunabbrev_tac ‘zs'’ \\
+      Q_TAC (RNEWS_TAC (“zs' :string list”, “r :num”, “n' + SUC j'”)) ‘X’ \\
+     ‘zs' <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0] \\
+      simp [Abbr ‘z’, Abbr ‘z'’, LAST_EL] \\
+     ‘PRE (n + SUC j) = n + j’     by intLib.ARITH_TAC >> POP_ORW \\
+     ‘PRE (n' + SUC j') = n' + j'’ by intLib.ARITH_TAC >> POP_ORW \\
+      Know ‘n + SUC j <= n_max’
+      >- (simp [Abbr ‘n_max’] \\
+          intLib.ARITH_TAC) >> DISCH_TAC \\
+      Know ‘n' + SUC j' <= n_max’
+      >- (simp [Abbr ‘n_max’] \\
+          intLib.ARITH_TAC) >> DISCH_TAC \\
+     ‘zs = TAKE (n + SUC j) xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+     ‘zs' = TAKE (n' + SUC j') xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+      simp [EL_TAKE] \\
+      NTAC 2 (POP_ASSUM K_TAC) \\
+      qunabbrevl_tac [‘j’, ‘j'’] \\
+      Suff ‘h - m + n = h - m' + n'’ >- Rewr \\
+      Q.PAT_X_ASSUM ‘n' - i' = n - i’ MP_TAC \\
+      Q.PAT_X_ASSUM ‘m' - i' = m - i’ MP_TAC \\
+      Q.PAT_X_ASSUM ‘i <= n’   MP_TAC \\
+      Q.PAT_X_ASSUM ‘i <= m’   MP_TAC \\
+      Q.PAT_X_ASSUM ‘i' <= n'’ MP_TAC \\
+      Q.PAT_X_ASSUM ‘i' <= m'’ MP_TAC \\
+      Q.PAT_X_ASSUM ‘m <= h’   MP_TAC \\
+      Q.PAT_X_ASSUM ‘m' <= h’  MP_TAC \\
+      numLib.ARITH_TAC ]
 QED
 
 val _ = html_theory "separability";
