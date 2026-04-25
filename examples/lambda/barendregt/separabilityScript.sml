@@ -96,6 +96,89 @@ Proof
  >> simp [GSYM BT_ltree_paths_thm]
 QED
 
+Theorem vsubterm_of_VAR :
+    !X y p r. FINITE X /\ y IN X UNION RANK r /\ p <> [] ==>
+              vsubterm X (VAR y) p r =
+              SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)
+Proof
+    rpt STRIP_TAC
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> qid_spec_tac ‘r’
+ >> qid_spec_tac ‘y’
+ >> qid_spec_tac ‘p’
+ >> Induct_on ‘p’ >> simp []
+ >> rpt STRIP_TAC
+ >> Cases_on ‘p = []’
+ >- (simp [RNEW_def] \\
+     RW_TAC std_ss [vsubterm_def, GSYM ADD1] >- simp [solvable_VAR] \\
+    ‘hnf (VAR y)’ by simp [hnf_thm] \\
+    ‘M0 = VAR y’ by simp [Abbr ‘M0’, principal_hnf_reduce] \\
+     POP_ASSUM (fs o wrap) \\
+     fs [Abbr ‘M0’, Abbr ‘n’] \\
+     fs [Abbr ‘vs’] \\
+     fs [Abbr ‘M1’, hnf_children_VAR, Abbr ‘Ms’] \\
+     fs [Abbr ‘m’, Abbr ‘j’])
+ (* stage work *)
+ >> simp [LAST_DEF]
+ >> RW_TAC std_ss [vsubterm_def]
+ >- simp [solvable_VAR]
+ >> ‘hnf (VAR y)’ by simp [hnf_thm]
+ >> ‘M0 = VAR y’ by simp [Abbr ‘M0’, principal_hnf_reduce]
+ >> POP_ASSUM (fs o wrap) >> T_TAC
+ >> fs [Abbr ‘M0’, Abbr ‘n’]
+ >> fs [Abbr ‘vs’]
+ >> fs [Abbr ‘M1’, hnf_children_VAR, Abbr ‘Ms’]
+ >> fs [Abbr ‘m’, Abbr ‘j’]
+ >> simp [Abbr ‘M2’]
+ >> qabbrev_tac ‘m = LENGTH p’
+ >> ‘r + SUC m - 1 = SUC r + m - 1’ by simp [] >> POP_ORW
+ >> ‘r + SUC m = SUC r + m’ by simp [] >> POP_ORW
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Suff ‘z IN RANK (SUC r)’ >- simp [IN_UNION]
+ >> qunabbrev_tac ‘zs’
+ >> Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “SUC h”)) ‘X’
+ >> ‘zs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> ‘MEM z zs’ by simp [Abbr ‘z’, LAST_MEM]
+ >> MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘SUC h’, ‘X’] RNEWS_SUBSET_RANK)
+ >> simp []
+ >> rw [SUBSET_DEF]
+QED
+
+Theorem vsubterm_of_VAR' :
+    !X y p r. FINITE X /\ y IN X UNION RANK r /\ p <> [] ==>
+              vsubterm' X (VAR y) p r = VAR (RNEW (r + LENGTH p - 1) (LAST p) X)
+Proof
+    rw [vsubterm_of_VAR]
+QED
+
+Theorem vsubterm_eq_VAR :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+              vsubterm X M p r <> NONE /\ subterm X M p r = NONE ==>
+              vsubterm X M p r =
+              SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> NTAC 3 (POP_ASSUM MP_TAC)
+ >> qid_spec_tac ‘r’
+ >> qid_spec_tac ‘M’
+ >> qid_spec_tac ‘p’
+ >> Induct_on ‘p’ >- simp []
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’) >- simp [vsubterm_def]
+ >> Q_TAC (UNBETA_TAC [vsubterm_def]) ‘vsubterm X M (h::p) r’
+ >> Q_TAC (UNBETA_TAC [subterm_def]) ‘subterm X M (h::p) r’
+ >> ‘n' = n’ by simp [Abbr ‘n’, Abbr ‘n'’]
+ >> POP_ASSUM (fs o wrap) >> T_TAC
+ >> Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
+ >> reverse (Cases_on ‘h < m’)
+ >- (simp [Abbr ‘M2’] \\
+     cheat)
+ >> cheat
+QED
+
 (* cf. lameq_subterm_cong *)
 Theorem lameta_vsubterm_cong :
     !X M N p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
