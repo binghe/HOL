@@ -5,13 +5,13 @@
 (* AUTHORS : 2005-2011 Michael Norrish                                        *)
 (*         : 2023-2024 Michael Norrish and Chun Tian                          *)
 (* ========================================================================== *)
+
 Theory basic_swap
 Ancestors
   arithmetic string pred_set list rich_list pair numpair
   string_num
 Libs
   boolSimps numLib hurdUtils
-
 
 (* ----------------------------------------------------------------------
     swapping over strings
@@ -430,5 +430,13 @@ Proof
     rw [SUBSET_DEF, RNEWS_set, RANK]
  >> qexistsl_tac [‘r1’, ‘j’] >> rw []
 QED
+
+(* RNEW is the single fresh name at row r, column n, excluding X *)
+Definition RNEW_def :
+    RNEW r n X = LAST (RNEWS r (SUC n) X)
+End
+
+(* |- !r n X. RNEW r n X = n2s (r *, (SUC (string_width X) + n)) *)
+Theorem RNEW = RNEW_def |> SRULE [RNEWS, alloc_def, GENLIST_LAST, LET_DEF]
 
 val _ = html_theory "basic_swap";

@@ -10,7 +10,7 @@ Ancestors
   head_reduction standardisation solvable boehm takahashiS3 lameta_complete
 Libs
   hurdUtils tautLib numLib listLib NEWLib reductionEval head_reductionLib
-  monadsyntax intLib
+  monadsyntax
 
 (* enable basic monad support *)
 val _ = enable_monadsyntax ();
@@ -228,7 +228,7 @@ Proof
  >> gs [BUTLASTN_TAKE_UNCOND, LASTN_DROP_UNCOND]
  >> qabbrev_tac ‘n_max = SUC (MAX n n' + MAX j j')’
  >> Know ‘n <= n_max /\ n' <= n_max’
- >- (simp [Abbr ‘n_max’] >> intLib.ARITH_TAC)
+ >- (simp [Abbr ‘n_max’, MAX_DEF] >> numLib.ARITH_TAC)
  >> STRIP_TAC
  >> Q_TAC (RNEWS_TAC (“xs :string list”, “r :num”, “n_max :num”)) ‘X’
  (* applying TAKE_RNEWS (and TAKE_TAKE) *)
@@ -324,13 +324,13 @@ Proof
       simp [Abbr ‘l’, EL_TAKE, Abbr ‘z'’] \\
       POP_ASSUM K_TAC \\
       Know ‘n' + SUC j' <= n_max’
-      >- (simp [Abbr ‘n_max’] \\
-          intLib.ARITH_TAC) >> DISCH_TAC \\
+      >- (simp [Abbr ‘n_max’, MAX_DEF] \\
+          numLib.ARITH_TAC) >> DISCH_TAC \\
       qunabbrev_tac ‘zs'’ \\
       Q_TAC (RNEWS_TAC (“zs' :string list”, “r :num”, “n' + SUC j'”)) ‘X’ \\
      ‘zs' <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0] \\
       simp [LAST_EL] \\
-     ‘PRE (n' + SUC j') = n' + j'’ by intLib.ARITH_TAC >> POP_ORW \\
+     ‘PRE (n' + SUC j') = n' + j'’ by numLib.ARITH_TAC >> POP_ORW \\
      ‘zs' = TAKE (n' + SUC j') xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
       simp [EL_TAKE] \\
       simp [Abbr ‘xs2’, EL_DROP] \\
@@ -369,13 +369,13 @@ Proof
       simp [Abbr ‘l’, EL_TAKE, Abbr ‘z’] \\
       POP_ASSUM K_TAC \\
       Know ‘n + SUC j <= n_max’
-      >- (simp [Abbr ‘n_max’] \\
-          intLib.ARITH_TAC) >> DISCH_TAC \\
+      >- (simp [Abbr ‘n_max’, MAX_DEF] \\
+          numLib.ARITH_TAC) >> DISCH_TAC \\
       qunabbrev_tac ‘zs’ \\
       Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n + SUC j”)) ‘X’ \\
      ‘zs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0] \\
       simp [LAST_EL] \\
-     ‘PRE (n + SUC j) = n + j’ by intLib.ARITH_TAC >> POP_ORW \\
+     ‘PRE (n + SUC j) = n + j’ by numLib.ARITH_TAC >> POP_ORW \\
      ‘zs = TAKE (n + SUC j) xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
       simp [EL_TAKE] \\
       simp [Abbr ‘xs2’, EL_DROP] \\
@@ -396,15 +396,15 @@ Proof
       Q_TAC (RNEWS_TAC (“zs' :string list”, “r :num”, “n' + SUC j'”)) ‘X’ \\
      ‘zs' <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0] \\
       simp [Abbr ‘z’, Abbr ‘z'’, LAST_EL] \\
-     ‘PRE (n + SUC j) = n + j’     by intLib.ARITH_TAC >> POP_ORW \\
-     ‘PRE (n' + SUC j') = n' + j'’ by intLib.ARITH_TAC >> POP_ORW \\
+     ‘PRE (n  + SUC j)  = n  + j’  by numLib.ARITH_TAC >> POP_ORW \\
+     ‘PRE (n' + SUC j') = n' + j'’ by numLib.ARITH_TAC >> POP_ORW \\
       Know ‘n + SUC j <= n_max’
-      >- (simp [Abbr ‘n_max’] \\
-          intLib.ARITH_TAC) >> DISCH_TAC \\
+      >- (simp [Abbr ‘n_max’, MAX_DEF] \\
+          numLib.ARITH_TAC) >> DISCH_TAC \\
       Know ‘n' + SUC j' <= n_max’
-      >- (simp [Abbr ‘n_max’] \\
-          intLib.ARITH_TAC) >> DISCH_TAC \\
-     ‘zs = TAKE (n + SUC j) xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+      >- (simp [Abbr ‘n_max’, MAX_DEF] \\
+          numLib.ARITH_TAC) >> DISCH_TAC \\
+     ‘zs  = TAKE (n  + SUC j)  xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
      ‘zs' = TAKE (n' + SUC j') xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
       simp [EL_TAKE] \\
       NTAC 2 (POP_ASSUM K_TAC) \\
