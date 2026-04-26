@@ -38,8 +38,8 @@ val {tynames, rep_t, lp} =
                 | BoundOutput 'free 'bound pi (* a{x}.P *)
                 | FreeOutput 'free 'free pi   (* {a}b.P *)’;
 
-val tyname1 = List.nth (tynames,0);
-val tyname2 = List.nth (tynames,1);
+val tyname0 = List.nth (tynames,0);
+val tyname1 = List.nth (tynames,1);
 
 val d_tm = mk_var("d", rep_t);
 
@@ -47,29 +47,30 @@ val d_tm = mk_var("d", rep_t);
 Overload LP = lp;
 
 (* type 1 (:pi) *)
-val {term_ABS_pseudo11 = term_ABS_pseudo11_1,
-     term_REP_11 = term_REP_11_1,
-     genind_term_REP = genind_term_REP1,
-     genind_exists = genind_exists1,
-     termP = termP1,
-     absrep_id = absrep_id1,
-     repabs_pseudo_id = repabs_pseudo_id1,
-     term_REP_t = term_REP_t1,
-     term_ABS_t = term_ABS_t1,
-     newty = newty1, ...} = new_type_step1 tyname1 0 [] {lp = lp};
+val {term_ABS_pseudo11 = pi_ABS_pseudo11,
+     term_REP_11       = pi_REP_11,
+     genind_term_REP   = pi_genind_REP,
+     genind_exists     = pi_genind_exists,
+     termP             = pi_termP,
+     absrep_id         = pi_absrep_id,
+     repabs_pseudo_id  = pi_repabs_pseudo_id,
+     term_REP_t        = pi_REP_t,
+     term_ABS_t        = pi_ABS_t,
+     newty             = newty0, ...} =
+     new_type_step1 tyname0 0 [] {lp = lp};
 
 (* type 2 (:residual) *)
-val {term_ABS_pseudo11 = term_ABS_pseudo11_2,
-     term_REP_11 = term_REP_11_2,
-     genind_term_REP = genind_term_REP2,
-     genind_exists = genind_exists2,
-     termP = termP2,
-     absrep_id = absrep_id2,
-     repabs_pseudo_id = repabs_pseudo_id2,
-     term_REP_t = term_REP_t2,
-     term_ABS_t = term_ABS_t2,
-     newty = newty2, ...} =
-     new_type_step1 tyname2 1 [genind_exists1] {lp = lp};
+val {term_ABS_pseudo11 = residual_ABS_pseudo11,
+     term_REP_11       = residual_REP_11,
+     genind_term_REP   = residual_genind_REP,
+     genind_exists     = residual_genind_exists,
+     termP             = residual_termP,
+     absrep_id         = residual_absrep_id,
+     repabs_pseudo_id  = residual_repabs_pseudo_id,
+     term_REP_t        = residual_REP_t,
+     term_ABS_t        = residual_ABS_t,
+     newty             = newty1, ...} =
+     new_type_step1 tyname1 1 [pi_genind_exists] {lp = lp};
 
 (* ----------------------------------------------------------------------
     Pi-calculus operators
@@ -80,176 +81,176 @@ Overload pilp[local] = “genind ^lp”
 fun toArb t = subst [“uu:string” |-> “ARB:string”] t
 
 (* Nil *)
-val Nil_t = mk_var("Nil", “:^newty1”);
+val Nil_t = mk_var("Nil", “:^newty0”);
 val Nil_pattern = “GLAM uu [] rNil [][]”;
 val Nil_def = new_definition(
    "Nil_def",
-  “^Nil_t = ^term_ABS_t1 ^(toArb Nil_pattern)”);
+  “^Nil_t = ^pi_ABS_t ^(toArb Nil_pattern)”);
 val Nil_termP = prove(
-    mk_comb(termP1, Nil_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Nil_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Nil_t = defined_const Nil_def;
 val Nil_def' = prove(
-  “^term_ABS_t1 ^Nil_pattern = ^Nil_t”,
-    srw_tac [][Nil_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Nil_termP]);
+  “^pi_ABS_t ^Nil_pattern = ^Nil_t”,
+    srw_tac [][Nil_def, GLAM_NIL_EQ, pi_ABS_pseudo11, Nil_termP]);
 
 (* Tau prefix *)
-val Tau_t = mk_var("Tau", “:^newty1 -> ^newty1”);
-val Tau_pattern = “GLAM uu [] rTau [] [^term_REP_t1 P]”;
+val Tau_t = mk_var("Tau", “:^newty0 -> ^newty0”);
+val Tau_pattern = “GLAM uu [] rTau [] [^pi_REP_t P]”;
 val Tau_def = new_definition(
    "Tau_def",
-  “^Tau_t P = ^term_ABS_t1 ^(toArb Tau_pattern)”);
+  “^Tau_t P = ^pi_ABS_t ^(toArb Tau_pattern)”);
 val Tau_termP = prove(
-    mk_comb(termP1, Tau_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Tau_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Tau_t = defined_const Tau_def;
 val Tau_def' = prove(
-  “^term_ABS_t1 ^Tau_pattern = ^Tau_t P”,
-    srw_tac [][Tau_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Tau_termP]);
+  “^pi_ABS_t ^Tau_pattern = ^Tau_t P”,
+    srw_tac [][Tau_def, GLAM_NIL_EQ, pi_ABS_pseudo11, Tau_termP]);
 
-(* Input prefix *)
-val Input_t = mk_var("Input", “:string -> string -> ^newty1 -> ^newty1”);
-val Input_pattern = “GLAM x [a] rInput [^term_REP_t1 P] []”;
+(* Input 'free 'bound pi *)
+val Input_t = mk_var("Input", “:string -> string -> ^newty0 -> ^newty0”);
+val Input_pattern = “GLAM x [a] rInput [^pi_REP_t P] []”;
 val Input_def = new_definition(
    "Input_def",
-  “^Input_t a x P = ^term_ABS_t1 ^Input_pattern”);
+  “^Input_t a x P = ^pi_ABS_t ^Input_pattern”);
 val Input_termP = prove(
-    mk_comb(termP1, Input_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Input_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Input_t = defined_const Input_def;
 
-(* Output prefix *)
-val Output_t = mk_var("Output", “:string -> string -> ^newty1 -> ^newty1”);
-val Output_pattern = “GLAM uu [a; b] rOutput [] [^term_REP_t1 P]”;
+(* Output 'free 'free pi *)
+val Output_t = mk_var("Output", “:string -> string -> ^newty0 -> ^newty0”);
+val Output_pattern = “GLAM uu [a; b] rOutput [] [^pi_REP_t P]”;
 val Output_def = new_definition(
    "Output_def",
-  “^Output_t a b P = ^term_ABS_t1 ^(toArb Output_pattern)”);
+  “^Output_t a b P = ^pi_ABS_t ^(toArb Output_pattern)”);
 val Output_termP = prove(
-    mk_comb(termP1, Output_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Output_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Output_t = defined_const Output_def;
 val Output_def' = prove(
-  “^term_ABS_t1 ^Output_pattern = ^Output_t a b P”,
-    srw_tac [][Output_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Output_termP]);
+  “^pi_ABS_t ^Output_pattern = ^Output_t a b P”,
+    srw_tac [][Output_def, GLAM_NIL_EQ, pi_ABS_pseudo11, Output_termP]);
 
-(* Match *)
-val Match_t = mk_var("Match", “:string -> string -> ^newty1 -> ^newty1”);
-val Match_pattern = “GLAM uu [a; b] rMatch [] [^term_REP_t1 P]”;
+(* Match 'free 'free pi *)
+val Match_t = mk_var("Match", “:string -> string -> ^newty0 -> ^newty0”);
+val Match_pattern = “GLAM uu [a; b] rMatch [] [^pi_REP_t P]”;
 val Match_def = new_definition(
    "Match_def",
-  “^Match_t a b P = ^term_ABS_t1 ^(toArb Match_pattern)”);
+  “^Match_t a b P = ^pi_ABS_t ^(toArb Match_pattern)”);
 val Match_termP = prove(
-    mk_comb(termP1, Match_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Match_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Match_t = defined_const Match_def;
 val Match_def' = prove(
-  “^term_ABS_t1 ^Match_pattern = ^Match_t a b P”,
-    srw_tac [][Match_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Match_termP]);
+  “^pi_ABS_t ^Match_pattern = ^Match_t a b P”,
+    srw_tac [][Match_def, GLAM_NIL_EQ, pi_ABS_pseudo11, Match_termP]);
 
 (* Mismatch *)
-val Mismatch_t = mk_var("Mismatch", “:string -> string -> ^newty1 -> ^newty1”);
-val Mismatch_pattern = “GLAM uu [a; b] rMismatch [] [^term_REP_t1 P]”;
+val Mismatch_t = mk_var("Mismatch", “:string -> string -> ^newty0 -> ^newty0”);
+val Mismatch_pattern = “GLAM uu [a; b] rMismatch [] [^pi_REP_t P]”;
 val Mismatch_def = new_definition(
    "Mismatch_def",
-  “^Mismatch_t a b P = ^term_ABS_t1 ^(toArb Mismatch_pattern)”);
+  “^Mismatch_t a b P = ^pi_ABS_t ^(toArb Mismatch_pattern)”);
 val Mismatch_termP = prove(
-    mk_comb(termP1, Mismatch_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Mismatch_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Mismatch_t = defined_const Mismatch_def;
 val Mismatch_def' = prove(
-  “^term_ABS_t1 ^Mismatch_pattern = ^Mismatch_t a b P”,
-    srw_tac [][Mismatch_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Mismatch_termP]);
+  “^pi_ABS_t ^Mismatch_pattern = ^Mismatch_t a b P”,
+    srw_tac [][Mismatch_def, GLAM_NIL_EQ, pi_ABS_pseudo11, Mismatch_termP]);
 
 (* Sum (Choice) *)
-val Sum_t = mk_var("Sum", “:^newty1 -> ^newty1 -> ^newty1”);
-val Sum_pattern = “GLAM uu [] rSum [] [^term_REP_t1 P; ^term_REP_t1 Q]”;
+val Sum_t = mk_var("Sum", “:^newty0 -> ^newty0 -> ^newty0”);
+val Sum_pattern = “GLAM uu [] rSum [] [^pi_REP_t P; ^pi_REP_t Q]”;
 val Sum_def = new_definition(
    "Sum_def",
-  “^Sum_t P Q = ^term_ABS_t1 ^(toArb Sum_pattern)”);
+  “^Sum_t P Q = ^pi_ABS_t ^(toArb Sum_pattern)”);
 val Sum_termP = prove(
-    mk_comb(termP1, Sum_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Sum_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Sum_t = defined_const Sum_def;
 val Sum_def' = prove(
-  “^term_ABS_t1 ^Sum_pattern = ^Sum_t P Q”,
-    srw_tac [][Sum_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Sum_termP]);
+  “^pi_ABS_t ^Sum_pattern = ^Sum_t P Q”,
+    srw_tac [][Sum_def, GLAM_NIL_EQ, pi_ABS_pseudo11, Sum_termP]);
 
 (* Parallel Composition *)
-val Par_t = mk_var("Par", “:^newty1 -> ^newty1 -> ^newty1”);
-val Par_pattern = “GLAM uu [] rPar [] [^term_REP_t1 P; ^term_REP_t1 Q]”;
+val Par_t = mk_var("Par", “:^newty0 -> ^newty0 -> ^newty0”);
+val Par_pattern = “GLAM uu [] rPar [] [^pi_REP_t P; ^pi_REP_t Q]”;
 val Par_def = new_definition(
    "Par_def",
-  “^Par_t P Q = ^term_ABS_t1 ^(toArb Par_pattern)”);
+  “^Par_t P Q = ^pi_ABS_t ^(toArb Par_pattern)”);
 val Par_termP = prove(
-    mk_comb(termP1, Par_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(pi_termP, Par_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Par_t = defined_const Par_def;
 val Par_def' = prove(
-  “^term_ABS_t1 ^Par_pattern = ^Par_t P Q”,
-    srw_tac [][Par_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Par_termP]);
+  “^pi_ABS_t ^Par_pattern = ^Par_t P Q”,
+    srw_tac [][Par_def, GLAM_NIL_EQ, pi_ABS_pseudo11, Par_termP]);
 
 (* Restriction *)
-val Res_t = mk_var("Res", “:string -> ^newty1 -> ^newty1”);
-val Res_pattern = “GLAM v [] rRes [^term_REP_t1 P] []”;
+val Res_t = mk_var("Res", “:string -> ^newty0 -> ^newty0”);
+val Res_pattern = “GLAM v [] rRes [^pi_REP_t P] []”;
 val Res_def = new_definition(
    "Res_def",
-  “^Res_t v P = ^term_ABS_t1 ^Res_pattern”);
+  “^Res_t v P = ^pi_ABS_t ^Res_pattern”);
 val Res_termP = prove(
-    mk_comb (termP1, Res_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb (pi_termP, Res_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val Res_t = defined_const Res_def;
 
 (* TauR *)
-val TauR_t = mk_var("TauR", “:^newty1 -> ^newty2”);
-val TauR_pattern = “GLAM uu [] rTauR [] [^term_REP_t1 P]”;
+val TauR_t = mk_var("TauR", “:^newty0 -> ^newty1”);
+val TauR_pattern = “GLAM uu [] rTauR [] [^pi_REP_t P]”;
 val TauR_def = new_definition(
    "TauR_def",
-  “^TauR_t P = ^term_ABS_t2 ^(toArb TauR_pattern)”);
+  “^TauR_t P = ^residual_ABS_t ^(toArb TauR_pattern)”);
 val TauR_termP = prove(
-    mk_comb(termP2, TauR_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(residual_termP, TauR_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val TauR_t = defined_const TauR_def;
 val TauR_def' = prove(
-  “^term_ABS_t2 ^TauR_pattern = ^TauR_t P”,
-    srw_tac [][TauR_def, GLAM_NIL_EQ, term_ABS_pseudo11_2, TauR_termP]);
+  “^residual_ABS_t ^TauR_pattern = ^TauR_t P”,
+    srw_tac [][TauR_def, GLAM_NIL_EQ, residual_ABS_pseudo11, TauR_termP]);
 
-(* Bound output (residual) *)
+(* BoundOutput 'free 'bound pi *)
 val BoundOutput_t =
-    mk_var("BoundOutput", “:string -> string -> ^newty1 -> ^newty2”);
-val BoundOutput_pattern = “GLAM x [a] rBoundOutput [^term_REP_t1 P] []”;
+    mk_var("BoundOutput", “:string -> string -> ^newty0 -> ^newty1”);
+val BoundOutput_pattern = “GLAM x [a] rBoundOutput [^pi_REP_t P] []”;
 val BoundOutput_def = new_definition(
    "BoundOutput_def",
-  “^BoundOutput_t a x P = ^term_ABS_t2 ^BoundOutput_pattern”);
+  “^BoundOutput_t a x P = ^residual_ABS_t ^BoundOutput_pattern”);
 val BoundOutput_termP = prove(
-    mk_comb(termP2, BoundOutput_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(residual_termP, BoundOutput_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val BoundOutput_t = defined_const BoundOutput_def;
 
 (* Input residual *)
-val InputS_t = mk_var("InputS", “:string -> string -> ^newty1 -> ^newty2”);
-val InputS_pattern = “GLAM x [a] rInputS [^term_REP_t1 P] []”;
+val InputS_t = mk_var("InputS", “:string -> string -> ^newty0 -> ^newty1”);
+val InputS_pattern = “GLAM x [a] rInputS [^pi_REP_t P] []”;
 val InputS_def = new_definition(
    "InputS_def",
-  “^InputS_t a x P = ^term_ABS_t2 ^InputS_pattern”);
+  “^InputS_t a x P = ^residual_ABS_t ^InputS_pattern”);
 val InputS_termP = prove(
-    mk_comb(termP2, InputS_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(residual_termP, InputS_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val InputS_t = defined_const InputS_def;
 
 (* Free output (residual) *)
 val FreeOutput_t =
-    mk_var("FreeOutput", “:string -> string -> ^newty1 -> ^newty2”);
-val FreeOutput_pattern = “GLAM uu [a; b] rFreeOutput [] [^term_REP_t1 P]”;
+    mk_var("FreeOutput", “:string -> string -> ^newty0 -> ^newty1”);
+val FreeOutput_pattern = “GLAM uu [a; b] rFreeOutput [] [^pi_REP_t P]”;
 val FreeOutput_def = new_definition(
    "FreeOutput_def",
-  “^FreeOutput_t a b P = ^term_ABS_t2 ^(toArb FreeOutput_pattern)”);
+  “^FreeOutput_t a b P = ^residual_ABS_t ^(toArb FreeOutput_pattern)”);
 val FreeOutput_termP = prove(
-    mk_comb(termP2, FreeOutput_pattern),
-    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+    mk_comb(residual_termP, FreeOutput_pattern),
+    match_mp_tac glam >> srw_tac [][pi_genind_REP]);
 val FreeOutput_t = defined_const FreeOutput_def;
 val FreeOutput_def' = prove(
-  “^term_ABS_t2 ^FreeOutput_pattern = ^FreeOutput_t a b P”,
-    srw_tac [][FreeOutput_def, GLAM_NIL_EQ, term_ABS_pseudo11_2,
+  “^residual_ABS_t ^FreeOutput_pattern = ^FreeOutput_t a b P”,
+    srw_tac [][FreeOutput_def, GLAM_NIL_EQ, residual_ABS_pseudo11,
                FreeOutput_termP]);
 
 (* ----------------------------------------------------------------------
@@ -269,14 +270,14 @@ val cons_info =
 
 val tpm_name_pfx = "t";
 val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
-    define_permutation {name_pfx = tpm_name_pfx, name = tyname1,
-                        term_REP_t = term_REP_t1,
-                        term_ABS_t = term_ABS_t1,
-                        absrep_id = absrep_id1,
-                        repabs_pseudo_id = repabs_pseudo_id1,
+    define_permutation {name_pfx = tpm_name_pfx, name = tyname0,
+                        term_REP_t = pi_REP_t,
+                        term_ABS_t = pi_ABS_t,
+                        absrep_id = pi_absrep_id,
+                        repabs_pseudo_id = pi_repabs_pseudo_id,
                         cons_info = cons_info,
-                        newty = newty1,
-                        genind_term_REP = genind_term_REP1};
+                        newty = newty0,
+                        genind_term_REP = pi_genind_REP};
 
 (* |- (!pi. tpm pi Nil = Nil) /\ (!pi P. tpm pi (Tau P) = Tau (tpm pi P)) /\
       (!x pi a P.
@@ -333,14 +334,14 @@ val {tpm_thm = rpm_thm,
      term_REP_tpm = term_REP_rpm,
      t_pmact_t = r_pmact_t,
      tpm_t = rpm_t} =
-    define_permutation {name_pfx = rpm_name_pfx, name = tyname2,
-                        term_REP_t = term_REP_t2,
-                        term_ABS_t = term_ABS_t2,
-                        absrep_id = absrep_id2,
-                        repabs_pseudo_id = repabs_pseudo_id2,
+    define_permutation {name_pfx = rpm_name_pfx, name = tyname1,
+                        term_REP_t = residual_REP_t,
+                        term_ABS_t = residual_ABS_t,
+                        absrep_id = residual_absrep_id,
+                        repabs_pseudo_id = residual_repabs_pseudo_id,
                         cons_info = rcons_info,
-                        newty = newty2,
-                        genind_term_REP = genind_term_REP2};
+                        newty = newty1,
+                        genind_term_REP = residual_genind_REP};
 
 (* |- (!pi P. rpm pi (TauR P) = TauR (tpm pi P)) /\
       (!x pi a P.
@@ -381,33 +382,33 @@ QED
    ---------------------------------------------------------------------- *)
 
 val term_REP_eqv = prove(
-   “support (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t1 {}”,
+   “support (fn_pmact ^t_pmact_t gt_pmact) ^pi_REP_t {}”,
     srw_tac [][support_def, fnpm_def, FUN_EQ_THM, term_REP_tpm, pmact_sing_inv]);
 
 val supp_term_REP = prove(
-   “supp (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t1 = {}”,
+   “supp (fn_pmact ^t_pmact_t gt_pmact) ^pi_REP_t = {}”,
     REWRITE_TAC [GSYM SUBSET_EMPTY]
  >> MATCH_MP_TAC (GEN_ALL supp_smallest)
  >> srw_tac [][term_REP_eqv]);
 
 val tpm_def' =
-    term_REP_tpm |> AP_TERM term_ABS_t1 |> PURE_REWRITE_RULE [absrep_id1];
+    term_REP_tpm |> AP_TERM pi_ABS_t |> PURE_REWRITE_RULE [pi_absrep_id];
 
-val t = mk_var("t", newty1);
+val t = mk_var("t", newty0);
 
 val supp_tpm_support = prove(
-   “support ^t_pmact_t ^t (supp gt_pmact (^term_REP_t1 ^t))”,
-    srw_tac [][support_def, tpm_def', supp_fresh, absrep_id1]);
+   “support ^t_pmact_t ^t (supp gt_pmact (^pi_REP_t ^t))”,
+    srw_tac [][support_def, tpm_def', supp_fresh, pi_absrep_id]);
 
 val supp_tpm_apart = prove(
-   “x IN supp gt_pmact (^term_REP_t1 ^t) /\ y NOTIN supp gt_pmact (^term_REP_t1 ^t)
+   “x IN supp gt_pmact (^pi_REP_t ^t) /\ y NOTIN supp gt_pmact (^pi_REP_t ^t)
     ==> ^tpm_t [(x,y)] ^t <> ^t”,
     srw_tac [][tpm_def']
- >> DISCH_THEN (MP_TAC o AP_TERM term_REP_t1)
- >> srw_tac [][repabs_pseudo_id1, genind_gtpm_eqn, genind_term_REP1, supp_apart]);
+ >> DISCH_THEN (MP_TAC o AP_TERM pi_REP_t)
+ >> srw_tac [][pi_repabs_pseudo_id, genind_gtpm_eqn, pi_genind_REP, supp_apart]);
 
 val supp_tpm = prove(
-   “supp ^t_pmact_t ^t = supp gt_pmact (^term_REP_t1 ^t)”,
+   “supp ^t_pmact_t ^t = supp gt_pmact (^pi_REP_t ^t)”,
     match_mp_tac (GEN_ALL supp_unique_apart)
  >> srw_tac [][supp_tpm_support, supp_tpm_apart, FINITE_GFV]);
 
@@ -429,7 +430,7 @@ QED
 fun supp_clause {con_termP, con_def} = let
   val t = mk_comb(“supp ^t_pmact_t”, lhand (concl (SPEC_ALL con_def)))
 in
-  t |> REWRITE_CONV [supp_tpm, con_def, MATCH_MP repabs_pseudo_id1 con_termP,
+  t |> REWRITE_CONV [supp_tpm, con_def, MATCH_MP pi_repabs_pseudo_id con_termP,
                      GFV_thm]
     |> REWRITE_RULE [supp_listpm, EMPTY_DELETE, LIST_TO_SET, UNION_EMPTY]
     |> REWRITE_RULE [GSYM supp_tpm]
@@ -457,33 +458,36 @@ Theorem FV_tpm[simp] = “x IN FV (tpm p (t :pi))”
    ---------------------------------------------------------------------- *)
 
 val residual_REP_eqv = prove(
-   “support (fn_pmact ^r_pmact_t gt_pmact) ^term_REP_t2 {}”,
+   “support (fn_pmact ^r_pmact_t gt_pmact) ^residual_REP_t {}”,
     srw_tac [][support_def, fnpm_def, FUN_EQ_THM, term_REP_rpm, pmact_sing_inv]);
 
 val supp_residual_REP = prove(
-   “supp (fn_pmact ^r_pmact_t gt_pmact) ^term_REP_t2 = {}”,
+   “supp (fn_pmact ^r_pmact_t gt_pmact) ^residual_REP_t = {}”,
     REWRITE_TAC [GSYM SUBSET_EMPTY]
  >> MATCH_MP_TAC (GEN_ALL supp_smallest)
  >> srw_tac [][residual_REP_eqv]);
 
 val rpm_def' =
-    term_REP_rpm |> AP_TERM term_ABS_t2 |> PURE_REWRITE_RULE [absrep_id2];
+    term_REP_rpm |> AP_TERM residual_ABS_t
+                 |> PURE_REWRITE_RULE [residual_absrep_id];
 
-val t = mk_var("t", newty2);
+val t = mk_var("t", newty1);
 
 val supp_rpm_support = prove(
-   “support ^r_pmact_t ^t (supp gt_pmact (^term_REP_t2 ^t))”,
-    srw_tac [][support_def, rpm_def', supp_fresh, absrep_id2]);
+   “support ^r_pmact_t ^t (supp gt_pmact (^residual_REP_t ^t))”,
+    srw_tac [][support_def, rpm_def', supp_fresh, residual_absrep_id]);
 
 val supp_rpm_apart = prove(
-   “x IN supp gt_pmact (^term_REP_t2 ^t) /\ y NOTIN supp gt_pmact (^term_REP_t2 ^t)
+   “x IN supp gt_pmact (^residual_REP_t ^t) /\
+    y NOTIN supp gt_pmact (^residual_REP_t ^t)
     ==> ^rpm_t [(x,y)] ^t <> ^t”,
     srw_tac [][rpm_def']
- >> DISCH_THEN (MP_TAC o AP_TERM term_REP_t2)
- >> srw_tac [][repabs_pseudo_id2, genind_gtpm_eqn, genind_term_REP2, supp_apart]);
+ >> DISCH_THEN (MP_TAC o AP_TERM residual_REP_t)
+ >> srw_tac [][residual_repabs_pseudo_id, genind_gtpm_eqn, residual_genind_REP,
+               supp_apart]);
 
 val supp_rpm = prove(
-   “supp ^r_pmact_t ^t = supp gt_pmact (^term_REP_t2 ^t)”,
+   “supp ^r_pmact_t ^t = supp gt_pmact (^residual_REP_t ^t)”,
     match_mp_tac (GEN_ALL supp_unique_apart)
  >> srw_tac [][supp_rpm_support, supp_rpm_apart, FINITE_GFV]);
 
@@ -505,7 +509,7 @@ QED
 fun rsupp_clause {con_termP, con_def} = let
   val t = mk_comb(“supp ^r_pmact_t”, lhand (concl (SPEC_ALL con_def)))
 in
-  t |> REWRITE_CONV [supp_rpm, con_def, MATCH_MP repabs_pseudo_id2 con_termP,
+  t |> REWRITE_CONV [supp_rpm, con_def, MATCH_MP residual_repabs_pseudo_id con_termP,
                      GFV_thm]
     |> REWRITE_RULE [supp_listpm, EMPTY_DELETE, LIST_TO_SET, UNION_EMPTY]
     |> REWRITE_RULE [GSYM supp_tpm]
@@ -552,11 +556,11 @@ val term_ind1 =
                      [sumTheory.FORALL_SUM, supp_listpm, LENGTH_NIL,
                       LENGTH1, LENGTH2,
                       IN_UNION, NOT_IN_EMPTY, oneTheory.FORALL_ONE,
-                      genind_exists1,
-                      genind_exists2,
+                      pi_genind_exists,
+                      residual_genind_exists,
                       LIST_REL_CONS1, LIST_REL_NIL]
-        |> Q.INST [‘Q’ |-> ‘\t. P (^term_ABS_t1 t)’]
-        |> SIMP_RULE std_ss [absrep_id1,
+        |> Q.INST [‘Q’ |-> ‘\t. P (^pi_ABS_t t)’]
+        |> SIMP_RULE std_ss [pi_absrep_id,
                              Nil_def', Tau_def', GSYM Input_def,
                              Output_def', Match_def', Mismatch_def',
                              Sum_def', Par_def', GSYM Res_def,
@@ -618,11 +622,11 @@ val term_ind2 =
                      [sumTheory.FORALL_SUM, supp_listpm, LENGTH_NIL,
                       LENGTH1, LENGTH2,
                       IN_UNION, NOT_IN_EMPTY, oneTheory.FORALL_ONE,
-                      genind_exists1,
-                      genind_exists2,
+                      pi_genind_exists,
+                      residual_genind_exists,
                       LIST_REL_CONS1, LIST_REL_NIL]
-        |> Q.INST [‘Q’ |-> ‘\t. P (^term_ABS_t2 t)’]
-        |> SIMP_RULE std_ss [absrep_id1, absrep_id2,
+        |> Q.INST [‘Q’ |-> ‘\t. P (^residual_ABS_t t)’]
+        |> SIMP_RULE std_ss [pi_absrep_id, residual_absrep_id,
                              Nil_def', Tau_def', GSYM Input_def,
                              Output_def', Match_def', Mismatch_def',
                              Sum_def', Par_def', GSYM Res_def,
@@ -669,8 +673,8 @@ Theorem simple_induction_residual =
  *)
 Theorem Res_eq_thm =
   “(Res u t1 = Res v t2 :pi)”
-     |> SIMP_CONV (srw_ss()) [Res_def, Res_termP, term_ABS_pseudo11_1,
-                              GLAM_eq_thm, term_REP_11_1, GSYM term_REP_tpm,
+     |> SIMP_CONV (srw_ss()) [Res_def, Res_termP, pi_ABS_pseudo11,
+                              GLAM_eq_thm, pi_REP_11, GSYM term_REP_tpm,
                               GSYM supp_tpm]
      |> Q.GENL [‘u’, ‘v’, ‘t1’, ‘t2’]
 
@@ -687,8 +691,8 @@ QED
  *)
 Theorem Input_eq_thm =
   “Input a x t1 = Input b y (t2 :pi)”
-     |> SIMP_CONV (srw_ss()) [Input_def, Input_termP, term_ABS_pseudo11_1,
-                              GLAM_eq_thm, term_REP_11_1,
+     |> SIMP_CONV (srw_ss()) [Input_def, Input_termP, pi_ABS_pseudo11,
+                              GLAM_eq_thm, pi_REP_11,
                               GSYM term_REP_tpm, GSYM supp_tpm]
      |> Q.GENL [‘a’, ‘b’, ‘x’, ‘y’, ‘t1’, ‘t2’]
 
@@ -705,9 +709,9 @@ QED
  *)
 Theorem InputS_eq_thm =
   “InputS a x t1 = InputS b y (t2 :pi)”
-     |> SIMP_CONV (srw_ss()) [InputS_def, InputS_termP, term_ABS_pseudo11_2,
+     |> SIMP_CONV (srw_ss()) [InputS_def, InputS_termP, residual_ABS_pseudo11,
                               GLAM_eq_thm,
-                              term_REP_11_1, term_REP_11_2,
+                              pi_REP_11, residual_REP_11,
                               GSYM term_REP_tpm, GSYM term_REP_rpm,
                               GSYM supp_tpm, GSYM supp_rpm]
      |> Q.GENL [‘a’, ‘b’, ‘x’, ‘y’, ‘t1’, ‘t2’]
@@ -725,9 +729,9 @@ QED
  *)
 Theorem BoundOutput_eq_thm =
   “BoundOutput a x t1 = BoundOutput b y (t2 :pi)”
-     |> SIMP_CONV (srw_ss()) [BoundOutput_def, BoundOutput_termP, term_ABS_pseudo11_2,
+     |> SIMP_CONV (srw_ss()) [BoundOutput_def, BoundOutput_termP, residual_ABS_pseudo11,
                               GLAM_eq_thm,
-                              term_REP_11_1, term_REP_11_2,
+                              pi_REP_11, residual_REP_11,
                               GSYM term_REP_tpm, GSYM term_REP_rpm,
                               GSYM supp_tpm, GSYM supp_rpm]
      |> Q.GENL [‘a’, ‘b’, ‘x’, ‘y’, ‘t1’, ‘t2’]
@@ -808,7 +812,7 @@ Proof
         Match_def, Match_termP, Mismatch_def, Mismatch_termP,
         Sum_def, Sum_termP, Par_def, Par_termP,
         Res_def, Res_termP,
-        term_ABS_pseudo11_1, GLAM_eq_thm]
+        pi_ABS_pseudo11, GLAM_eq_thm]
 QED
 
 Theorem residual_distinct[simp] :
@@ -821,7 +825,7 @@ Theorem residual_distinct[simp] :
 Proof
     rw [TauR_def, TauR_termP, BoundOutput_def, BoundOutput_termP,
         InputS_def, InputS_termP, FreeOutput_def, FreeOutput_termP,
-        term_ABS_pseudo11_2, GLAM_eq_thm]
+        residual_ABS_pseudo11, GLAM_eq_thm]
 QED
 
 Theorem pi_one_one[simp] :
@@ -835,7 +839,7 @@ Proof
     srw_tac [] [Tau_def, Tau_termP, Output_def, Output_termP,
                 Match_def, Match_termP, Mismatch_def, Mismatch_termP,
                 Sum_def, Sum_termP, Par_def, Par_termP,
-                term_ABS_pseudo11_1, gterm_11, term_REP_11_1]
+                pi_ABS_pseudo11, gterm_11, pi_REP_11]
  >> rw [CONJ_ASSOC]
 QED
 
@@ -844,8 +848,8 @@ Theorem residual_one_one[simp] :
     (!a b P c d Q. FreeOutput a b P = FreeOutput c d Q <=> a = c /\ b = d /\ P = Q)
 Proof
     srw_tac [] [TauR_def, TauR_termP, FreeOutput_def, FreeOutput_termP,
-                term_ABS_pseudo11_2, gterm_11,
-                term_REP_11_1, term_REP_11_2]
+                residual_ABS_pseudo11, gterm_11,
+                pi_REP_11, residual_REP_11]
  >> rw [CONJ_ASSOC]
 QED
 
@@ -906,37 +910,38 @@ QED
    ---------------------------------------------------------------------- *)
 
 (* NOTE: all 3 types have the same repty *)
-val (_, repty) = dom_rng (type_of term_REP_t1);
+val (_, repty) = dom_rng (type_of pi_REP_t);
 val repty' = ty_antiq repty;
 
 val termP_elim1 = prove(
-   “(!g. ^termP1 g ==> P g) <=> (!t. P (^term_REP_t1 t))”,
-    srw_tac [][EQ_IMP_THM] >- srw_tac [][genind_term_REP1]
- >> first_x_assum (qspec_then ‘^term_ABS_t1 g’ mp_tac)
- >> srw_tac [][repabs_pseudo_id1]);
+   “(!g. ^pi_termP g ==> P g) <=> (!t. P (^pi_REP_t t))”,
+    srw_tac [][EQ_IMP_THM] >- srw_tac [][pi_genind_REP]
+ >> first_x_assum (qspec_then ‘^pi_ABS_t g’ mp_tac)
+ >> srw_tac [][pi_repabs_pseudo_id]);
 
 val termP_removal1 =
     nomdatatype.termP_removal {
-      elimth = termP_elim1, absrep_id = absrep_id1,
-      tpm_def = AP_TERM term_ABS_t1 term_REP_tpm |> REWRITE_RULE [absrep_id1],
-      termP = termP1, repty = repty};
+      elimth = termP_elim1, absrep_id = pi_absrep_id,
+      tpm_def = AP_TERM pi_ABS_t term_REP_tpm |> REWRITE_RULE [pi_absrep_id],
+      termP = pi_termP, repty = repty};
 
 val termP_elim2 = prove(
-   “(!g. ^termP2 g ==> P g) <=> (!t. P (^term_REP_t2 t))”,
-    srw_tac [][EQ_IMP_THM] >- srw_tac [][genind_term_REP2]
- >> first_x_assum (qspec_then ‘^term_ABS_t2 g’ mp_tac)
- >> srw_tac [][repabs_pseudo_id2]);
+   “(!g. ^residual_termP g ==> P g) <=> (!t. P (^residual_REP_t t))”,
+    srw_tac [][EQ_IMP_THM] >- srw_tac [][residual_genind_REP]
+ >> first_x_assum (qspec_then ‘^residual_ABS_t g’ mp_tac)
+ >> srw_tac [][residual_repabs_pseudo_id]);
 
 val termP_removal2 =
     nomdatatype.termP_removal {
-      elimth = termP_elim2, absrep_id = absrep_id2,
-      tpm_def = AP_TERM term_ABS_t2 term_REP_rpm |> REWRITE_RULE [absrep_id2],
-      termP = termP2, repty = repty};
+      elimth = termP_elim2, absrep_id = residual_absrep_id,
+      tpm_def = AP_TERM residual_ABS_t term_REP_rpm
+             |> REWRITE_RULE [residual_absrep_id],
+      termP = residual_termP, repty = repty};
 
 val termP' = prove(
    “genind ^lp n t <=>
-      ^termP1 t /\ n = 0 \/
-      ^termP2 t /\ n = 1”,
+      ^pi_termP t /\ n = 0 \/
+      ^residual_termP t /\ n = 1”,
     EQ_TAC >> simp_tac (srw_ss()) [] >> strip_tac >> rw []
  >> qsuff_tac ‘n = 0 \/ n = 1’ >- (strip_tac >> srw_tac [][])
  >> pop_assum mp_tac
@@ -982,29 +987,29 @@ val tlf =
      (ts1 :^repty' list) (ts2 :^repty' list) (p :'q).
       case u of
         rNil => tnf p : 'r
-      | rTau => ttf (HD ds2) (^term_ABS_t1 (HD ts2)) p :'r
+      | rTau => ttf (HD ds2) (^pi_ABS_t (HD ts2)) p :'r
       | rInput => tif (HD fvs) v (HD ds1)
-                      (^term_ABS_t1 (HD ts1)) p :'r
+                      (^pi_ABS_t (HD ts1)) p :'r
       | rOutput => tof (HD fvs) (HD (TL fvs)) (HD ds2)
-                       (^term_ABS_t1 (HD ts2)) p :'r
+                       (^pi_ABS_t (HD ts2)) p :'r
       | rMatch => tmf (HD fvs) (HD (TL fvs)) (HD ds2)
-                      (^term_ABS_t1 (HD ts2)) p :'r
+                      (^pi_ABS_t (HD ts2)) p :'r
       | rMismatch => tuf (HD fvs) (HD (TL fvs)) (HD ds2)
-                         (^term_ABS_t1 (HD ts2)) p :'r
+                         (^pi_ABS_t (HD ts2)) p :'r
       | rSum => tsf (HD ds2) (HD (TL ds2))
-                    (^term_ABS_t1 (HD ts2))
-                    (^term_ABS_t1 (HD (TL ts2))) p :'r
+                    (^pi_ABS_t (HD ts2))
+                    (^pi_ABS_t (HD (TL ts2))) p :'r
       | rPar => tpf (HD ds2) (HD (TL ds2))
-                    (^term_ABS_t1 (HD ts2))
-                    (^term_ABS_t1 (HD (TL ts2))) p :'r
-      | rRes => tcf v (HD ds1) (^term_ABS_t1 (HD ts1)) p :'r
-      | rTauR => taf (HD ds2) (^term_ABS_t1 (HD ts2)) p :'r
+                    (^pi_ABS_t (HD ts2))
+                    (^pi_ABS_t (HD (TL ts2))) p :'r
+      | rRes => tcf v (HD ds1) (^pi_ABS_t (HD ts1)) p :'r
+      | rTauR => taf (HD ds2) (^pi_ABS_t (HD ts2)) p :'r
       | rInputS => trf (HD fvs) v (HD ds1)
-                       (^term_ABS_t1 (HD ts1)) p :'r
+                       (^pi_ABS_t (HD ts1)) p :'r
       | rBoundOutput => tbf (HD fvs) v (HD ds1)
-                            (^term_ABS_t1 (HD ts1)) p :'r
+                            (^pi_ABS_t (HD ts1)) p :'r
       | rFreeOutput => tff (HD fvs) (HD (TL fvs)) (HD ds2)
-                           (^term_ABS_t1 (HD ts2)) p :'r”;
+                           (^pi_ABS_t (HD ts2)) p :'r”;
 
 Overload TLF = tlf
 
@@ -1012,11 +1017,11 @@ val FN = mk_var("FN", “:repcode gterm -> 'q -> 'r”)
 val fn1_def_t = “fn1 = λp. ^FN (pi_REP p)”
 val fn2_def_t = “fn2 = λr. ^FN (residual_REP r)”
 
-val testcase = [(fn1_def_t, repabs_pseudo_id1,
+val testcase = [(fn1_def_t, pi_repabs_pseudo_id,
                  [SYM Nil_def', Input_def, SYM Output_def', SYM Tau_def',
                   SYM Match_def', SYM Mismatch_def', SYM Sum_def', SYM Par_def',
                   Res_def]),
-                (fn2_def_t, repabs_pseudo_id2,
+                (fn2_def_t, residual_repabs_pseudo_id,
                  [InputS_def, SYM FreeOutput_def', BoundOutput_def,
                   SYM TauR_def'])]
 
@@ -1040,7 +1045,7 @@ fun case1 (tm_def, repabs, defs) =
             simp_tac list_ss [genind_GLAM_eqn,
                               TypeBase.distinct_of rep_t,
                               LIST_REL_NIL, LIST_REL_CONS1, PULL_EXISTS,
-                              CONS_11, genind_term_REP1, genind_term_REP2]
+                              CONS_11, pi_genind_REP, residual_genind_REP]
           val goal =
                 mk_eq (mk_comb(FN, rand (rhs eq)), mk_comb (c, lhs eq))
         in

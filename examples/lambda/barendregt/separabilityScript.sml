@@ -101,12 +101,14 @@ Theorem vsubterm_of_VAR :
               vsubterm X (VAR y) p r =
               SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)
 Proof
-    rpt STRIP_TAC
- >> NTAC 2 (POP_ASSUM MP_TAC)
- >> qid_spec_tac ‘r’
- >> qid_spec_tac ‘y’
- >> qid_spec_tac ‘p’
- >> Induct_on ‘p’ >> simp []
+    Q.X_GEN_TAC ‘X’
+ >> Suff ‘FINITE X ==>
+            !p y r. y IN X UNION RANK r /\ p <> [] ==>
+                    vsubterm X (VAR y) p r =
+                    SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)’
+ >- METIS_TAC []
+ >> DISCH_TAC
+ >> Induct_on ‘p’ >> simp [] (* only one goal is left *)
  >> rpt STRIP_TAC
  >> Cases_on ‘p = []’
  >- (simp [RNEW_def] \\
@@ -120,8 +122,7 @@ Proof
      fs [Abbr ‘m’, Abbr ‘j’])
  (* stage work *)
  >> simp [LAST_DEF]
- >> RW_TAC std_ss [vsubterm_def]
- >- simp [solvable_VAR]
+ >> RW_TAC std_ss [vsubterm_def] >- simp [solvable_VAR]
  >> ‘hnf (VAR y)’ by simp [hnf_thm]
  >> ‘M0 = VAR y’ by simp [Abbr ‘M0’, principal_hnf_reduce]
  >> POP_ASSUM (fs o wrap) >> T_TAC
@@ -148,7 +149,7 @@ Theorem vsubterm_of_VAR' :
     !X y p r. FINITE X /\ y IN X UNION RANK r /\ p <> [] ==>
               vsubterm' X (VAR y) p r = VAR (RNEW (r + LENGTH p - 1) (LAST p) X)
 Proof
-    rw [vsubterm_of_VAR]
+    RW_TAC std_ss [vsubterm_of_VAR]
 QED
 
 (* NOTE: The exact value of ‘x’ is hard to describe, except for it's row/rank. *)
@@ -219,6 +220,17 @@ Proof
  >> fs [Abbr ‘vs'’]
  >> fs [Abbr ‘M1'’, hnf_children_VAR, Abbr ‘Ms'’]
  >> fs [Abbr ‘m'’]
+QED
+
+Theorem vsubterm_eq_VAR' :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+              vsubterm X M p r <> NONE /\ subterm X M p r = NONE ==>
+              ?x. vsubterm' X M p r = VAR x /\
+                  x IN RANK (r + LENGTH p)
+Proof
+    rpt GEN_TAC
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP vsubterm_eq_VAR))
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 (* cf. lameq_subterm_cong *)

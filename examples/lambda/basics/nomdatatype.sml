@@ -674,9 +674,9 @@ fun filter_this_next e l acc =
 fun build_tns ptys tynames = let
     val dv = dVartype (!bound_tyname);
     val bound_args = filter_this_next dv ptys [];
-    val indexes = map (fn e => index_of (pretypeToName e) tynames) bound_args
+    val indexes = map (fn e => index_of (pretypeToName e) tynames) bound_args;
 in
-    mk_eq (“tns :num list”, mk_list (indexes, numSyntax.num)
+    mk_eq (“tns :num list”, mk_list (indexes, numSyntax.num))
 end;
 
 fun pretypeIsNominal pty =
@@ -686,13 +686,12 @@ fun pretypeIsNominal pty =
       | dAQ pty => false;
 
 (* filter_out_this_next 2 [1,2,3,4,5] [] = [1,4,5] *)
-fun filter_out_this_next e l acc =
-    if l = [] then rev acc
+fun filter_out_this_next e [] acc = rev acc
+  | filter_out_this_next e (h::t) acc =
+    if h = e then
+        filter_out_this_next e (tl t) acc
     else
-        if hd l = e then
-            filter_out_this_next e (tl (tl l)) acc
-        else
-            filter_out_this_next e (tl l) (hd l::acc);
+        filter_out_this_next e t (h::acc);
 
 (* The “uns” list contains indexes of all nominal types, excluding the one
    after 'bound (which is put into the “tns” list).
@@ -706,10 +705,9 @@ in
 end;
 
 (* gen_names 3 [] = ["a0", "a1", "a2"] *)
-fun gen_names n acc =
-    if n = 0 then acc
-    else
-        gen_names (n - 1) (("a" ^ Int.toString (n - 1))::acc);
+fun gen_names 0 acc = acc
+  | gen_names n acc =
+    gen_names (n - 1) (("a" ^ Int.toString (n - 1))::acc);
 
 fun build_args ptys = let
     val tys = List.map Option.valOf
@@ -720,7 +718,7 @@ in
     List.map mk_var (zip names tys)
 end;
 
-fun build_lp_inner cptys tyname tynames = let
+fun build_lp_inner cs tyname tynames = let
     val n_tm = index_of tyname tynames
 in
     List.map (fn (c:string,ptys) =>
@@ -729,7 +727,7 @@ in
                   c,
                   build_args ptys,
                   build_tns ptys tynames,
-                  build_uns ptys tynames)) cptys
+                  build_uns ptys tynames)) cs
 end;
 
 fun build_d_term cname args rep_t = let
@@ -750,8 +748,7 @@ val data =
     (``n = 0``, ``lfvs = 0``, "LAMi", [``a0``], ``tns = [0]``, ``uns = [0]``)]:
    (term * term * string * term list * term * term) list
 *)
-fun build_lp (asts :AST list) rep_t = let
-    val tynames = extract_tynames asts;
+fun build_lp (asts :AST list) rep_t tynames = let
     val data = List.concat (List.map (fn (tyname,df) =>
                                          case df of
                                              Constructors cs =>
@@ -773,6 +770,35 @@ in
     list_mk_abs ([n_tm, lfvs_tm, d_tm, tns_tm, uns_tm], list_mk_disj c_tms)
 end;
 
+(* sample code:
+
+(* Input 'free 'bound pi *)
+val Input_t = mk_var("Input", “:string -> string -> ^newty1 -> ^newty1”);
+val Input_pattern = “GLAM x [a] rInput [^term_REP_t1 P] []”;
+val Input_def = new_definition(
+   "Input_def",
+  “^Input_t a x P = ^term_ABS_t1 ^Input_pattern”);
+val Input_termP = prove(
+    mk_comb(termP1, Input_pattern),
+    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+val Input_t = defined_const Input_def;
+
+(* Output 'free 'free pi *)
+val Output_t = mk_var("Output", “:string -> string -> ^newty1 -> ^newty1”);
+val Output_pattern = “GLAM uu [a; b] rOutput [] [^term_REP_t1 P]”;
+val Output_def = new_definition(
+   "Output_def",
+  “^Output_t a b P = ^term_ABS_t1 ^(toArb Output_pattern)”);
+val Output_termP = prove(
+    mk_comb(termP1, Output_pattern),
+    match_mp_tac glam >> srw_tac [][genind_term_REP1]);
+val Output_t = defined_const Output_def;
+val Output_def' = prove(
+  “^term_ABS_t1 ^Output_pattern = ^Output_t a b P”,
+    srw_tac [][Output_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Output_termP]);
+ *)
+fun build_constructor_def (c:string,ptys:pretype list) = 0;
+
 (* Step 1: parse datatype quotation
    Step 2: define repcode (intermediate datatype)
    Step 3: generate lp term
@@ -781,7 +807,7 @@ fun nominal_datatype q = let
   val asts = parse_datatype q;
   val tynames = extract_tynames asts;
   val rep_t = define_repcode asts;
-  val lp_tm = build_lp asts rep_t
+  val lp_tm = build_lp asts rep_t tynames
 in
     {tynames = tynames,
      rep_t = rep_t,
