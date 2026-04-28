@@ -439,4 +439,20 @@ End
 (* |- !r n X. RNEW r n X = n2s (r *, (SUC (string_width X) + n)) *)
 Theorem RNEW = RNEW_def |> SRULE [RNEWS, alloc_def, GENLIST_LAST, LET_DEF]
 
+Theorem RNEW_thm :
+    !r n X. FINITE X ==> RNEW r n X NOTIN (X UNION RANK r)
+Proof
+    RW_TAC std_ss [RNEW_def]
+ >> qabbrev_tac ‘vs = RNEWS r (SUC n) X’
+ >> MP_TAC (Q.SPECL [‘r’, ‘SUC n’, ‘X’] RNEWS_def)
+ >> RW_TAC std_ss []
+ >> ‘vs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> qabbrev_tac ‘z = LAST vs’
+ >> ‘MEM z vs’ by simp [Abbr ‘z’, LAST_MEM]
+ >> Suff ‘DISJOINT (set vs) (X UNION RANK r)’
+ >- RW_TAC std_ss [DISJOINT_ALT]
+ >> simp [DISJOINT_UNION']
+ >> simp [Abbr ‘vs’, DISJOINT_RNEWS_RANK']
+QED
+
 val _ = html_theory "basic_swap";
