@@ -439,6 +439,28 @@ End
 (* |- !r n X. RNEW r n X = n2s (r *, (SUC (string_width X) + n)) *)
 Theorem RNEW = RNEW_def |> SRULE [RNEWS, alloc_def, GENLIST_LAST, LET_DEF]
 
+Theorem RNEW_IN_RANK :
+    !r n X. FINITE X ==> RNEW r n X IN RANK (SUC r)
+Proof
+    RW_TAC std_ss [RNEW_def]
+ >> qabbrev_tac ‘vs = RNEWS r (SUC n) X’
+ >> MP_TAC (Q.SPECL [‘r’, ‘SUC n’, ‘X’] RNEWS_def)
+ >> RW_TAC std_ss []
+ >> ‘vs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> qabbrev_tac ‘z = LAST vs’
+ >> ‘MEM z vs’ by simp [Abbr ‘z’, LAST_MEM]
+ >> Suff ‘set vs SUBSET RANK (SUC r)’ >- rw [SUBSET_DEF]
+ >> simp [Abbr ‘vs’, RNEWS_SUBSET_RANK]
+QED
+
+Theorem RNEW_IN_RANK' :
+    !r n X. FINITE X ==> RNEW r n X IN X UNION RANK (SUC r)
+Proof
+    RW_TAC std_ss [IN_UNION]
+ >> DISJ2_TAC
+ >> MATCH_MP_TAC RNEW_IN_RANK >> art []
+QED
+
 Theorem RNEW_thm :
     !r n X. FINITE X ==> RNEW r n X NOTIN (X UNION RANK r)
 Proof

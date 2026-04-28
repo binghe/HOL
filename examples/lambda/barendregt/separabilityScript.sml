@@ -37,6 +37,10 @@ Overload VAR = “term$VAR”
 
 val _ = temp_clear_overloads_on "fEL"; (* use old EL syntax *)
 
+fun qid_specl_tac []     = ALL_TAC
+  | qid_specl_tac (h::t) =
+    qid_specl_tac t >> qid_spec_tac h;
+
 (*---------------------------------------------------------------------------*
  *  Virtual subterm (vsubterm) of Boehm Trees
  *---------------------------------------------------------------------------*)
@@ -96,7 +100,41 @@ Proof
  >> simp [GSYM BT_ltree_paths_thm]
 QED
 
-Theorem vsubterm_of_VAR :
+Theorem subterm_imp_vsubterm_not_none :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+              subterm X M p r <> NONE ==> vsubterm X M p r <> NONE
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> qid_specl_tac [‘p’, ‘M’, ‘r’]
+ >> Induct_on ‘p’ >- simp []
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> Q_TAC (UNBETA_TAC [subterm_def]) ‘subterm X M (h::p) r’
+ >> STRIP_TAC
+ >> Q_TAC (UNBETA_TAC [vsubterm_def]) ‘vsubterm X M (h::p) r’
+ >> ‘n' = n’ by simp [Abbr ‘n’, Abbr ‘n'’]
+ >> POP_ASSUM (fs o wrap) >> T_TAC
+ >> Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘m = m'’   (fs o wrap o SYM)
+ >> simp [Abbr ‘M2’]
+ >> FIRST_X_ASSUM irule >> art []
+ >> MATCH_MP_TAC subterm_induction_lemma'
+ >> qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp []
+ >> simp [Abbr ‘m’, Once EQ_SYM_EQ]
+ >> MATCH_MP_TAC hnf_children_size_alt
+ >> qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> simp []
+QED
+
+Theorem vsubterm_imp_subterm_none :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+              vsubterm X M p r = NONE ==> subterm X M p r = NONE
+Proof
+    PROVE_TAC [subterm_imp_vsubterm_not_none]
+QED
+
+Theorem vsubterm_var :
     !X y p r. FINITE X /\ y IN X UNION RANK r /\ p <> [] ==>
               vsubterm X (VAR y) p r =
               SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)
@@ -145,15 +183,15 @@ Proof
  >> rw [SUBSET_DEF]
 QED
 
-Theorem vsubterm_of_VAR' :
+Theorem vsubterm_var' :
     !X y p r. FINITE X /\ y IN X UNION RANK r /\ p <> [] ==>
               vsubterm' X (VAR y) p r = VAR (RNEW (r + LENGTH p - 1) (LAST p) X)
 Proof
-    RW_TAC std_ss [vsubterm_of_VAR]
+    RW_TAC std_ss [vsubterm_var]
 QED
 
 (* NOTE: The exact value of ‘x’ is hard to describe, except for it's row/rank. *)
-Theorem vsubterm_eq_VAR :
+Theorem vsubterm_eq_var :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
               vsubterm X M p r <> NONE /\ subterm X M p r = NONE ==>
               ?x. vsubterm X M p r = SOME (VAR x,r + LENGTH p) /\
@@ -222,14 +260,14 @@ Proof
  >> fs [Abbr ‘m'’]
 QED
 
-Theorem vsubterm_eq_VAR' :
+Theorem vsubterm_eq_var' :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
               vsubterm X M p r <> NONE /\ subterm X M p r = NONE ==>
               ?x. vsubterm' X M p r = VAR x /\
                   x IN RANK (r + LENGTH p)
 Proof
     rpt GEN_TAC
- >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP vsubterm_eq_VAR))
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP vsubterm_eq_var))
  >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
@@ -558,6 +596,82 @@ Proof
       numLib.ARITH_TAC ]
 QED
 
+Theorem vsubterm_not_none_bnf :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M ==>
+              vsubterm X M p r <> NONE
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> qid_specl_tac [‘p’, ‘M’, ‘r’]
+ >> Induct_on ‘p’ >- simp []
+ >> rpt GEN_TAC
+ >> NTAC 2 DISCH_TAC
+ >> ‘solvable M’ by PROVE_TAC [bnf_solvable]
+ >> RW_TAC std_ss [vsubterm_def]
+ >> Cases_on ‘h < m’ >> simp [Abbr ‘M2’]
+ >- (FIRST_X_ASSUM irule \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC subterm_induction_lemma' \\
+         qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp [] \\
+         simp [Abbr ‘m’, Once EQ_SYM_EQ] \\
+         MATCH_MP_TAC hnf_children_size_alt \\
+         qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> simp []) \\
+     qunabbrev_tac ‘vs’ \\
+     Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’ \\
+    ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma'] \\
+     Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y :string”, “args :term list”)) ‘M1’ \\
+    ‘TAKE n vs = vs’ by rw [] \\
+     POP_ASSUM (rfs o wrap) \\
+    ‘Ms = args’ by simp [Abbr ‘Ms’] \\
+     POP_ASSUM (rfs o wrap) \\
+     qunabbrev_tac ‘Ms’ \\
+     MATCH_MP_TAC hnf_children_bnf \\
+     qexistsl_tac [‘vs’, ‘y’] \\
+     ASM_SIMP_TAC std_ss [] \\
+     Q.PAT_X_ASSUM ‘M0 = _’ (REWRITE_TAC o wrap o SYM) \\
+     Suff ‘M0 = M’ >- rw [] \\
+     qunabbrev_tac ‘M0’ \\
+     MATCH_MP_TAC principal_hnf_bnf >> art [])
+ >> Cases_on ‘p = []’ >- simp []
+ >> Suff ‘z IN X UNION RANK (SUC r)’
+ >- (DISCH_TAC >> simp [vsubterm_var])
+ >> simp [Abbr ‘z’, Abbr ‘zs’]
+ >> ‘n + SUC j = SUC (n + j)’ by simp [] >> POP_ORW
+ >> REWRITE_TAC [GSYM RNEW_def]
+ >> MATCH_MP_TAC RNEW_IN_RANK' >> art []
+QED
+
+Theorem vsubterm_not_none_has_bnf :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M ==>
+              vsubterm X M p r <> NONE
+Proof
+    rw [has_bnf_thm]
+ >> ‘M == N’ by PROVE_TAC [betastar_lameq]
+ >> Know ‘FV N SUBSET X UNION RANK r’
+ >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV M’ >> art [] \\
+     MATCH_MP_TAC betastar_FV_SUBSET >> art [])
+ >> DISCH_TAC
+ >> Know ‘vsubterm X M p r = NONE <=> vsubterm X N p r = NONE’
+ >- (MATCH_MP_TAC (cj 1 lameta_vsubterm_cong) >> art [] \\
+     MATCH_MP_TAC lameq_imp_lameta >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC vsubterm_not_none_bnf >> art []
+QED
+
+Theorem lameta_vsubterm_cong_has_bnf :
+    !X M N p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                          FV N SUBSET X UNION RANK r /\
+                M === N /\ has_bnf M /\ has_bnf N
+            ==> vsubterm' X M p r === vsubterm' X N p r
+Proof
+    rpt STRIP_TAC
+ >> ‘vsubterm X M p r <> NONE /\
+     vsubterm X N p r <> NONE’ by PROVE_TAC [vsubterm_not_none_has_bnf]
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘p’, ‘r’] lameta_vsubterm_cong)
+ >> simp []
+QED
+
 Theorem vsubterm_is_none_inclusive :
     !X M p r. vsubterm X M p r = NONE <=>
               !q. p <<= q ==> vsubterm X M q r = NONE
@@ -565,10 +679,7 @@ Proof
     rpt GEN_TAC
  >> reverse EQ_TAC
  >- (DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
- >> qid_spec_tac ‘r’
- >> qid_spec_tac ‘M’
- >> qid_spec_tac ‘X’
- >> qid_spec_tac ‘p’
+ >> qid_specl_tac [‘p’, ‘X’, ‘M’, ‘r’]
  >> Induct_on ‘p’ >- rw [vsubterm_NIL]
  >> rw [vsubterm_def] (* 3 subgoals, same tactics *)
  >> Cases_on ‘q’ >> fs [vsubterm_def]
@@ -670,7 +781,7 @@ Proof
 QED
 
 (* cf. Boehm_transform_exists_lemma (for subterm) *)
-Theorem Boehm_transform_exists_thm :
+Theorem Boehm_transform_exists_lemma' :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r ==>
        ?pi. Boehm_transform pi /\
             is_ready (apply pi M) /\

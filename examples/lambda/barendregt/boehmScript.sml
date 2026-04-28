@@ -40,6 +40,10 @@ Overload VAR = “term$VAR”
 
 val _ = temp_clear_overloads_on "fEL";
 
+fun qid_specl_tac []     = ALL_TAC
+  | qid_specl_tac (h::t) =
+    qid_specl_tac t >> qid_spec_tac h;
+
 (*---------------------------------------------------------------------------*
  *  Boehm Trees (and subterms) - name after Corrado Böhm [2]                 *
  *---------------------------------------------------------------------------*)
@@ -1204,10 +1208,7 @@ Proof
     rpt GEN_TAC
  >> reverse EQ_TAC
  >- (DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
- >> Q.ID_SPEC_TAC ‘r’
- >> Q.ID_SPEC_TAC ‘M’
- >> Q.ID_SPEC_TAC ‘X’
- >> Q.ID_SPEC_TAC ‘p’
+ >> qid_specl_tac [‘p’, ‘X’, ‘M’, ‘r’]
  >> Induct_on ‘p’ >- rw [subterm_NIL]
  >> rw [subterm_def]
  >> Cases_on ‘q’ >> fs [subterm_def]
@@ -5495,8 +5496,7 @@ Theorem BT_ltree_el_cases :
              ?vs y m. ltree_el (BT' X M r) p = SOME (SOME (vs,y),SOME m)
 Proof
     rpt GEN_TAC
- >> qid_spec_tac ‘r’
- >> qid_spec_tac ‘M’
+ >> qid_specl_tac [‘M’, ‘r’]
  >> Induct_on ‘p’
  >- (rpt STRIP_TAC \\
     ‘solvable M’ by PROVE_TAC [bnf_solvable] \\
