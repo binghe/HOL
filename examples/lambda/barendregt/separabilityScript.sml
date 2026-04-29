@@ -84,6 +84,55 @@ Proof
     rw [vsubterm_NIL]
 QED
 
+Theorem vsubterm_of_solvables :
+    !X M h p r. solvable M ==>
+      vsubterm X M (h::p) r =
+      let M0 = principal_hnf M;
+           n = LAMl_size M0;
+          vs = RNEWS r n X;
+          M1 = principal_hnf (M0 @* MAP VAR vs);
+          Ms = hnf_children M1;
+           m = LENGTH Ms;
+           j = h - m;
+          zs = RNEWS r (n + SUC j) X;
+           z = LAST zs;
+          M2 = if h < m then EL h Ms else VAR z
+      in
+          vsubterm X M2 p (SUC r)
+Proof
+    RW_TAC std_ss [vsubterm_def]
+QED
+
+Theorem vsubterm_of_unsolvables :
+    !X M p r. unsolvable M /\ p <> [] ==> vsubterm X M p r = NONE
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘p’ >> fs []
+ >> RW_TAC std_ss [vsubterm_def]
+QED
+
+Theorem vsubterm_of_principal_hnf :
+    !X M p r. solvable M /\ p <> [] ==>
+              vsubterm X (principal_hnf M) p r = vsubterm X M p r
+Proof
+    rpt STRIP_TAC
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
+ >> Cases_on ‘p’ >> fs []
+ >> qabbrev_tac ‘M0 = principal_hnf M’
+ >> ‘solvable M0’ by PROVE_TAC [solvable_principal_hnf]
+ >> RW_TAC std_ss [vsubterm_of_solvables]
+ >> ‘M0' = M0’ by rw [Abbr ‘M0'’, Abbr ‘M0’, principal_hnf_stable']
+ >> POP_ASSUM (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘n = n'’   (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘m = m'’   (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘j = j'’   (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘zs = zs'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘z = z'’   (fs o wrap o SYM)
+QED
+
 Theorem vsubterm_alt_subterm :
     !p X M r. subterm X M p r <> NONE ==> vsubterm X M p r = subterm X M p r
 Proof
@@ -787,7 +836,7 @@ Theorem Boehm_transform_exists_lemma' :
               is_ready (apply pi M) /\
               FV (apply pi M) SUBSET X UNION RANK (SUC r) /\
              ?v P. closed P /\
-                  !q. q <<= p ==>
+                  !q. q <<= p /\ q <> [] ==>
                       vsubterm X M q r <> NONE ==>
                       vsubterm X (apply pi M) q r <> NONE /\
                       vsubterm' X (apply pi M) q r = [P/v] (vsubterm' X M q r)
@@ -1072,8 +1121,6 @@ Proof
      Suff ‘FV (EL i args') SUBSET FV (EL i args)’ >- METIS_TAC [SUBSET_DEF] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  (* extra goal: FV (apply pi M) SUBSET X UNION RANK (SUC r) *)
- >> cheat
- (* TODO
  >> CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘apply pi M == _’                K_TAC \\
      Q.PAT_X_ASSUM ‘principal_hnf (apply pi M) = _’ K_TAC \\
@@ -1082,13 +1129,13 @@ Proof
      POP_ASSUM MP_TAC (* solvable (apply pi M) *) \\
      simp [Boehm_apply_APPEND, Abbr ‘pi’, Abbr ‘p1’, Abbr ‘p2’, Abbr ‘p3’,
            Boehm_apply_MAP_rightctxt'] \\
-     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) (* l = SNOC b as *) \\
      DISCH_TAC \\
      reverse CONJ_TAC
-     >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘ROW r’ \\
-         rw [Abbr ‘l’, alloc_SUBSET_ROW] \\
-         Suff ‘ROW r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
-         rw [ROW_SUBSET_RANK]) \\
+     >- (Suff ‘set l SUBSET RANK (SUC r)’ >- SET_TAC [] \\
+         Q_TAC (TRANS_TAC SUBSET_TRANS) ‘set zs’ >> art [] \\
+         qunabbrev_tac ‘zs’ \\
+         MATCH_MP_TAC RNEWS_SUBSET_RANK >> simp []) \\
      MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘FV (M @* MAP VAR vs)’ \\
      CONJ_TAC >- (MATCH_MP_TAC FV_SUB_SUBSET >> art []) \\
@@ -1105,18 +1152,18 @@ Proof
  >> qexistsl_tac [‘y’, ‘P’] >> art []
  >> NTAC 2 STRIP_TAC (* push ‘q <<= p’ to assumptions *)
  (* RHS rewriting from M to M0 *)
- >> Know ‘subterm X M0 q r = subterm X M q r’
+ >> Know ‘vsubterm X M0 q r = vsubterm X M q r’
  >- (qunabbrev_tac ‘M0’ \\
-     MATCH_MP_TAC subterm_of_principal_hnf >> art [])
+     MATCH_MP_TAC vsubterm_of_principal_hnf >> art [])
  >> DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM)
  (* LHS rewriting from M to M0 *)
- >> Know ‘subterm X (apply pi M) q r =
-          subterm X (VAR b @* args' @* MAP VAR as) q r’
+ >> Know ‘vsubterm X (apply pi M) q r =
+          vsubterm X (VAR b @* args' @* MAP VAR as) q r’
  >- (Q.PAT_X_ASSUM ‘_ = VAR b @* args' @* MAP VAR as’
        (ONCE_REWRITE_TAC o wrap o SYM) \\
      qabbrev_tac ‘t = apply pi M’ \\
      ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     MATCH_MP_TAC subterm_of_principal_hnf >> art [])
+     MATCH_MP_TAC vsubterm_of_principal_hnf >> art [])
  >> Rewr'
  (* stage cleanups *)
  >> Q.PAT_X_ASSUM ‘solvable (apply pi M)’          K_TAC
@@ -1125,6 +1172,8 @@ Proof
  >> Q.PAT_X_ASSUM ‘Boehm_transform pi’             K_TAC
  (* stage work, now ‘M’ is eliminated from both sides! *)
  >> Cases_on ‘q’ >- FULL_SIMP_TAC std_ss [] (* this asserts q = h::t *)
+ >> cheat
+ (* TODO
  >> Know ‘h < m’
  >- (Cases_on ‘p’ >> fs [] \\
      Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM) \\
@@ -1249,7 +1298,7 @@ Proof
      irule (cj 1 subterm_solvable_lemma) >> simp [] \\
      Q.EXISTS_TAC ‘t’ >> art [])
  >> DISCH_TAC
- >> Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm' X M (h::q) r’
+ >> Q_TAC (UNBETA_TAC [vsubterm_of_solvables]) ‘subterm' X M (h::q) r’
  >> simp []
  *)
 QED
