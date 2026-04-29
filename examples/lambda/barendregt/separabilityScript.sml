@@ -783,14 +783,14 @@ QED
 (* cf. Boehm_transform_exists_lemma (for subterm) *)
 Theorem Boehm_transform_exists_lemma' :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r ==>
-       ?pi. Boehm_transform pi /\
-            is_ready (apply pi M) /\
-            FV (apply pi M) SUBSET X UNION RANK (SUC r) /\
-            ?v P. closed P /\
-              !q. q <<= p ==>
-                  vsubterm X M q r <> NONE ==>
-                  vsubterm X (apply pi M) q r <> NONE /\
-                  vsubterm' X (apply pi M) q r = [P/v] (vsubterm' X M q r)
+         ?pi. Boehm_transform pi /\
+              is_ready (apply pi M) /\
+              FV (apply pi M) SUBSET X UNION RANK (SUC r) /\
+             ?v P. closed P /\
+                  !q. q <<= p ==>
+                      vsubterm X M q r <> NONE ==>
+                      vsubterm X (apply pi M) q r <> NONE /\
+                      vsubterm' X (apply pi M) q r = [P/v] (vsubterm' X M q r)
 Proof
     rpt STRIP_TAC
  (* trivial case: M is unsolvable *)
@@ -825,8 +825,6 @@ Proof
  >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (rfs o wrap)
  >> qabbrev_tac ‘m = LENGTH args’
- >> cheat
- (* TODO
  (* using ‘subterm_width’ and applying subterm_width_thm *)
  >> qabbrev_tac ‘d = subterm_width M p’
  >> Know ‘m <= d’
@@ -854,13 +852,13 @@ Proof
      fs [closed_def])
  >> DISCH_TAC
  >> ‘LENGTH args' = m’ by rw [Abbr ‘args'’, Abbr ‘m’]
- (* NOTE: Z contains ‘vs’ in addition to X and FV M *)
- >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
- >> ‘FINITE Z’ by (rw [Abbr ‘Z’] >> rw [])
  >> Know ‘solvable (M0 @* MAP VAR vs)’
  >- (MATCH_MP_TAC solvable_appstar' \\
      qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’] >> simp [])
  >> DISCH_TAC
+ (* NOTE: Z contains ‘vs’ in addition to X and FV M *)
+ >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
+ >> ‘FINITE Z’ by (rw [Abbr ‘Z’] >> rw [])
  >> Know ‘FV M1 SUBSET Z’
  >- (MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘FV M0 UNION set vs’ \\
@@ -874,17 +872,31 @@ Proof
       qunabbrev_tac ‘M1’ \\
       MATCH_MP_TAC principal_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
- >> qabbrev_tac ‘z = SUC (string_width Z)’
- >> qabbrev_tac ‘l = alloc r z (d - m + 1)’
- >> Know ‘ALL_DISTINCT l /\ LENGTH l = d - m + 1’
- >- rw [Abbr ‘l’, alloc_thm]
- >> STRIP_TAC
+ (* NOTE: new method avoiding calling ‘alloc’ directly *)
+ >> Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n + d - m + 1”)) ‘X’
+ >> ‘DISJOINT (set zs) (FV M)’ by PROVE_TAC [subterm_disjoint_lemma]
+ >> qabbrev_tac ‘l = DROP n zs’
+ >> ‘ALL_DISTINCT l’ by PROVE_TAC [ALL_DISTINCT_DROP]
+ >> ‘LENGTH l = d - m + 1’ by simp [Abbr ‘l’]
+ >> ‘l <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> ‘TAKE n zs = vs’ by simp [Abbr ‘zs’, Abbr ‘vs’, TAKE_RNEWS]
+ >> Know ‘DISJOINT (set l) (set vs)’
+ >- (Q.PAT_X_ASSUM ‘ALL_DISTINCT zs’ MP_TAC \\
+    ‘zs = TAKE n zs ++ DROP n zs’ by simp [TAKE_DROP] >> POP_ORW \\
+     POP_ORW \\
+     rw [ALL_DISTINCT_APPEND] \\
+     rw [DISJOINT_ALT'])
+ >> DISCH_TAC
+ >> Know ‘set l SUBSET set zs’
+ >- (‘zs = TAKE n zs ++ DROP n zs’ by simp [TAKE_DROP] >> POP_ORW \\
+     simp [])
+ >> DISCH_TAC
  >> Know ‘DISJOINT (set l) Z’
- >- (rw [Abbr ‘l’, Abbr ‘z’, DISJOINT_ALT', alloc_def, MEM_GENLIST] \\
-     ONCE_REWRITE_TAC [TAUT ‘~P \/ ~R <=> P /\ R ==> F’] \\
-     STRIP_TAC \\
-    ‘FINITE Z’ by rw [Abbr ‘Z’] \\
-     MP_TAC (Q.SPECL [‘x’, ‘Z’] string_width_thm) >> rw [])
+ >- (rw [Abbr ‘Z’, DISJOINT_UNION'] >|
+     [ MATCH_MP_TAC DISJOINT_SUBSET' \\
+       Q.EXISTS_TAC ‘set zs’ >> art [],
+       MATCH_MP_TAC DISJOINT_SUBSET' \\
+       Q.EXISTS_TAC ‘set zs’ >> art [] ])
  >> DISCH_TAC
  (* now recover the old definition of Y *)
  >> Know ‘DISJOINT (set l) (FV M1)’
@@ -893,13 +905,12 @@ Proof
  >> ASM_REWRITE_TAC [FV_appstar, FV_thm]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  >> Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ (* ~MEM y l *)
-       (STRIP_ASSUME_TAC o (SIMP_RULE (srw_ss()) [DISJOINT_ALT']))
- >> ‘l <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+      (STRIP_ASSUME_TAC o (SIMP_RULE (srw_ss()) [DISJOINT_ALT']))
  >> qabbrev_tac ‘as = FRONT l’
  >> ‘LENGTH as = d - m’ by rw [Abbr ‘as’, LENGTH_FRONT]
  >> qabbrev_tac ‘b = LAST l’
  >> Know ‘l = SNOC b as’
- >- (ASM_SIMP_TAC std_ss [Abbr ‘as’, Abbr ‘b’, SNOC_LAST_FRONT])
+ >- ASM_SIMP_TAC std_ss [Abbr ‘as’, Abbr ‘b’, SNOC_LAST_FRONT]
  >> DISCH_TAC
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -1030,7 +1041,7 @@ Proof
  >> DISCH_TAC
  (* applying is_ready_alt' *)
  >> CONJ_TAC
- >- (simp [is_ready_alt', Abbr ‘pi’] \\
+ >- (simp [is_ready_alt, Abbr ‘pi’] \\
      qexistsl_tac [‘b’, ‘args' ++ MAP VAR as’] \\
      CONJ_TAC
      >- (MP_TAC (Q.SPEC ‘VAR b @* args' @* MAP VAR as’
@@ -1045,21 +1056,24 @@ Proof
          rw [ALL_DISTINCT_SNOC] >> PROVE_TAC []) \\
      rw [EVERY_MEM, MEM_MAP] \\
      qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set args))’ \\
-     rfs [LIST_TO_SET_SNOC] \\
+     fs [LIST_TO_SET_SNOC] >> T_TAC \\
      Suff ‘FV e SUBSET Y’ >- METIS_TAC [SUBSET_DEF] \\
      qunabbrev_tac ‘Y’ \\
      MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args'))’ \\
-     reverse CONJ_TAC
-     >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE, MEM_EL] \\
-         Q.EXISTS_TAC ‘EL n args’ \\
-         CONJ_TAC >- (Q.EXISTS_TAC ‘n’ >> art []) \\
-         POP_ASSUM MP_TAC \\
-         Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- METIS_TAC [SUBSET_DEF] \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-     rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
-     Q.EXISTS_TAC ‘e’ >> art [])
+     CONJ_TAC
+     >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+         Q.EXISTS_TAC ‘e’ >> art []) \\
+     rw [SUBSET_DEF, IN_BIGUNION_IMAGE, MEM_EL] \\
+     rename1 ‘i < LENGTH args'’ \\
+     Q.EXISTS_TAC ‘EL i args’ \\
+     CONJ_TAC >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+     POP_ASSUM MP_TAC \\
+     Suff ‘FV (EL i args') SUBSET FV (EL i args)’ >- METIS_TAC [SUBSET_DEF] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  (* extra goal: FV (apply pi M) SUBSET X UNION RANK (SUC r) *)
+ >> cheat
+ (* TODO
  >> CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘apply pi M == _’                K_TAC \\
      Q.PAT_X_ASSUM ‘principal_hnf (apply pi M) = _’ K_TAC \\
@@ -1240,6 +1254,7 @@ Proof
  *)
 QED
 
+(* END *)
 val _ = html_theory "separability";
 
 (* References:
