@@ -1273,21 +1273,36 @@ Proof
      >- (simp [vsubterm_var] \\
          SYM_TAC >> MATCH_MP_TAC lemma14b \\
          simp [FV_thm] \\
-         cheat) \\
+         MP_TAC (Q.SPECL [‘X’, ‘M’, ‘r’, ‘M0’, ‘n’, ‘vs’, ‘M1’]
+                         subterm_headvar_lemma) >> simp [] \\
+         Suff ‘RNEW (LENGTH t + SUC r - 1) (LAST t) X NOTIN
+               X UNION RANK (SUC r)’ >- METIS_TAC [] \\
+         qabbrev_tac ‘r' = LENGTH t + SUC r - 1’ \\
+         MP_TAC (Q.SPECL [‘r'’, ‘LAST t’, ‘X’] RNEW_thm) >> simp [] \\
+         Suff ‘RANK (SUC r) SUBSET RANK r'’ >- SET_TAC [] \\
+         MATCH_MP_TAC RANK_MONO \\
+        ‘0 < LENGTH t’ by simp [LENGTH_NON_NIL] \\
+         simp [Abbr ‘r'’]) \\
      simp [] \\
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘r’, ‘M0’, ‘n’, ‘vs’, ‘M1’]
+                     subterm_headvar_lemma') >> simp [] >> DISCH_TAC \\
+     qabbrev_tac ‘i = n + SUC (h - m)’ \\
+     Know ‘RNEWS r i X = TAKE i zs’
+     >- (qunabbrev_tac ‘zs’ \\
+         MATCH_MP_TAC RNEWS_TAKE >> simp [Abbr ‘i’]) >> Rewr' \\
+     Know ‘LAST (TAKE i zs) = EL (i - 1) zs’
+     >- (MATCH_MP_TAC LAST_TAKE_EL >> simp [Abbr ‘i’]) >> Rewr' \\
+     simp [Abbr ‘i’] \\
+    ‘n + SUC (h - m) - 1 = n + (h - m)’ by simp [] >> POP_ORW \\
+     Know ‘EL (h - m) as = EL (h - m) l’
+     >- (qunabbrev_tac ‘as’ \\
+         MATCH_MP_TAC EL_FRONT >> simp [NULL_EQ_NIL]) >> Rewr' \\
+     simp [Abbr ‘l’, EL_DROP] \\
+     SYM_TAC >> MATCH_MP_TAC lemma14b \\
+     simp [FV_thm] \\
      cheat)
  >> cheat
  (* TODO
- >> Know ‘h < m’
- >- (Cases_on ‘p’ >> fs [] \\
-     Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM) \\
-     Know ‘subterm X M (h::t) r <> NONE’
-     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw []) \\
-     CONV_TAC (UNBETA_CONV “subterm X M (h::t) r”) \\
-     qmatch_abbrev_tac ‘f _’ \\
-     RW_TAC bool_ss [subterm_of_solvables] \\
-     simp [Abbr ‘f’])
- >> DISCH_TAC
  (* eliminating ‘MAP VAR as’ *)
  >> Know ‘EL h (args' ++ MAP VAR as) = EL h args'’
  >- (MATCH_MP_TAC EL_APPEND1 >> rw [])

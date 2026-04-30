@@ -2853,6 +2853,20 @@ Proof
     FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) [] ]
 QED
 
+Theorem LAST_TAKE_EL :
+    !l n. 0 < n /\ n <= LENGTH l ==> LAST (TAKE n l) = EL (n - 1) l
+Proof
+    Induct_on ‘l’ >> rw []
+ >> simp [LAST_DEF]
+ >> Cases_on ‘l = []’ >> fs []
+ >- (‘n = 1’ by simp [] >> simp [])
+ >> Cases_on ‘n <= 1’
+ >- (‘n = 1’ by simp [] >> simp [])
+ >> simp [EL_CONS]
+ >> ‘PRE (n - 1) = n - 2’ by simp []
+ >> simp []
+QED
+
 val SUB_ADD_lem =
    numLib.DECIDE ``!l n m. n + m <= l ==> ((l - (n + m)) + n = l - m)``
 

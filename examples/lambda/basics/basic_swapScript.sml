@@ -235,6 +235,9 @@ Proof
  >> simp [EL_TAKE, EL_MAP]
 QED
 
+(* |- !r m n s. FINITE s /\ m <= n ==> RNEWS r m s = TAKE m (RNEWS r n s) *)
+Theorem RNEWS_TAKE = GSYM TAKE_RNEWS
+
 Theorem RNEWS_set :
     !r n s. set (RNEWS r n s) =
             {v | ?j. v = n2s (r *, j) /\
