@@ -111,6 +111,52 @@ Proof
  >> RW_TAC std_ss [vsubterm_def]
 QED
 
+Theorem vsubterm_of_absfree_hnf :
+    !X M h p r. hnf M /\ ~is_abs M ==>
+       vsubterm X M (h::p) r =
+       let Ms = hnf_children M;
+            m = LENGTH Ms;
+            j = h - m;
+           zs = RNEWS r (SUC j) X;
+            z = LAST zs;
+           M2 = if h < m then EL h Ms else VAR z
+       in
+           vsubterm X M2 p (SUC r)
+Proof
+    rpt STRIP_TAC
+ >> ‘solvable M’ by PROVE_TAC [hnf_solvable]
+ >> RW_TAC std_ss [vsubterm_of_solvables]
+ >> ‘M0 = M’ by rw [Abbr ‘M0’, principal_hnf_reduce]
+ >> fs [Abbr ‘M0’]
+ >> Know ‘n = 0’
+ >- (qunabbrev_tac ‘n’ \\
+     MATCH_MP_TAC LAMl_size_eq_0 >> art [])
+ >> DISCH_THEN (fs o wrap)
+ >> fs [Abbr ‘vs’]
+ >> Q.PAT_X_ASSUM ‘Ms' = Ms’ (rfs o wrap)
+ >> Q.PAT_X_ASSUM ‘m = m'’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘M = M1’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘j = j'’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘zs = zs'’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘z = z'’ (rfs o wrap o SYM)
+QED
+
+Theorem vsubterm_of_absfree_hnf_explicit :
+    !X y Ms h p r.
+       vsubterm X (VAR y @* Ms) (h::p) r =
+       let m = LENGTH Ms;
+           j = h - m;
+          zs = RNEWS r (SUC j) X;
+           z = LAST zs;
+          M2 = if h < m then EL h Ms else VAR z
+       in
+          vsubterm X M2 p (SUC r)
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘VAR y @* Ms’, ‘h’, ‘p’, ‘r’] vsubterm_of_absfree_hnf)
+ >> rw [hnf_appstar, is_abs_appstar]
+QED
+
 Theorem vsubterm_of_principal_hnf :
     !X M p r. solvable M /\ p <> [] ==>
               vsubterm X (principal_hnf M) p r = vsubterm X M p r
@@ -829,17 +875,48 @@ Proof
  >> NTAC 2 (rw [])
 QED
 
-(* cf. Boehm_transform_exists_lemma (for subterm) *)
+(* NOTE: ‘vsubterm_width’ further ensures that it's bigger than every index
+   in the path, which may be arbitrarily bigger as a virtual path.
+
+   The SUC in “SUC (MAX_LIST p)” is necessary: for even an index 0 in the path,
+   it means the vsubterm at that level has at least one child, making the width
+   at least be 1 there.
+ *)
+Definition vsubterm_width_def :
+    vsubterm_width M p = MAX (subterm_width M p) (SUC (MAX_LIST p))
+End
+
+Theorem subterm_le_vsubterm_width[simp] :
+    subterm_width M p <= vsubterm_width M p
+Proof
+    rw [vsubterm_width_def]
+QED
+
+(* NOTE: This is the main purpose of introducing ‘vsubterm_width’. *)
+Theorem vsubterm_width_thm :
+    !p M e. MEM e p ==> e < vsubterm_width M p
+Proof
+    rw [vsubterm_width_def]
+ >> DISJ2_TAC
+ >> Suff ‘e <= MAX_LIST p’ >- simp []
+ >> MATCH_MP_TAC MAX_LIST_PROPERTY >> art []
+QED
+
+(* cf. Boehm_transform_exists_lemma (for subterm)
+
+   NOTE: “vsubterm X M q r <> NONE” only ensures that the subterm is solvable.
+   For ‘has_bnf M’, it's eliminated.
+ *)
 Theorem Boehm_transform_exists_lemma' :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r ==>
          ?pi. Boehm_transform pi /\
               is_ready (apply pi M) /\
               FV (apply pi M) SUBSET X UNION RANK (SUC r) /\
-             ?v P. closed P /\
-                  !q. q <<= p /\ q <> [] ==>
-                      vsubterm X M q r <> NONE ==>
-                      vsubterm X (apply pi M) q r <> NONE /\
-                      vsubterm' X (apply pi M) q r = [P/v] (vsubterm' X M q r)
+              ?v P. closed P /\
+                   !q. q <<= p /\ q <> [] /\
+                       vsubterm X M q r <> NONE ==>
+                       vsubterm X (apply pi M) q r <> NONE /\
+                       vsubterm' X (apply pi M) q r = [P/v] (vsubterm' X M q r)
 Proof
     rpt STRIP_TAC
  (* trivial case: M is unsolvable *)
@@ -875,11 +952,15 @@ Proof
  >> POP_ASSUM (rfs o wrap)
  >> qabbrev_tac ‘m = LENGTH args’
  (* using ‘subterm_width’ and applying subterm_width_thm *)
- >> qabbrev_tac ‘d = subterm_width M p’
+ >> qabbrev_tac ‘d = vsubterm_width M p’
  >> Know ‘m <= d’
- >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘r’] subterm_width_first) \\
-     rw [Abbr ‘d’])
+ >- (Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width M p’ \\
+     simp [Abbr ‘d’] \\
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘r’] subterm_width_first) \\
+     simp [])
  >> DISCH_TAC
+ (* applying vsubterm_width_thm *)
+ >> ‘!e. MEM e p ==> e < d’ by PROVE_TAC [vsubterm_width_thm]
  (* p1 is the first Boehm transformation for removing abstractions of M0 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -1150,12 +1231,8 @@ Proof
      rw [RANK_MONO])
  (* stage work, there's the textbook choice of y and P *)
  >> qexistsl_tac [‘y’, ‘P’] >> art []
- >> NTAC 2 STRIP_TAC (* push ‘q <<= p’ to assumptions *)
- (* RHS rewriting from M to M0 *)
- >> Know ‘vsubterm X M0 q r = vsubterm X M q r’
- >- (qunabbrev_tac ‘M0’ \\
-     MATCH_MP_TAC vsubterm_of_principal_hnf >> art [])
- >> DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM)
+ >> Q.X_GEN_TAC ‘q’
+ >> STRIP_TAC (* push ‘q <<= p’ to assumptions *)
  (* LHS rewriting from M to M0 *)
  >> Know ‘vsubterm X (apply pi M) q r =
           vsubterm X (VAR b @* args' @* MAP VAR as) q r’
@@ -1171,7 +1248,29 @@ Proof
  >> Q.PAT_X_ASSUM ‘apply pi M == _’                K_TAC
  >> Q.PAT_X_ASSUM ‘Boehm_transform pi’             K_TAC
  (* stage work, now ‘M’ is eliminated from both sides! *)
- >> Cases_on ‘q’ >- FULL_SIMP_TAC std_ss [] (* this asserts q = h::t *)
+ >> Cases_on ‘q’ >- FULL_SIMP_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘h::t <> []’ K_TAC
+ >> Know ‘h < d’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     MATCH_MP_TAC IS_PREFIX_MEM \\
+     Q.EXISTS_TAC ‘h::t’ >> simp [])
+ >> DISCH_TAC
+ >> REWRITE_TAC [GSYM appstar_APPEND]
+ >> qabbrev_tac ‘args2 = args' ++ MAP VAR as’
+ >> ‘LENGTH args2 = d’ by simp [Abbr ‘args2’]
+ >> Know ‘vsubterm X (VAR b @* args2) (h::t) r =
+          vsubterm X (EL h args2) t (SUC r)’
+ >- (MP_TAC (Q.SPECL [‘X’, ‘b’, ‘args2’, ‘h’, ‘t’, ‘r’]
+                     vsubterm_of_absfree_hnf_explicit) \\
+     simp [])
+ >> Rewr'
+ >> reverse (Cases_on ‘h < m’)
+ >- (POP_ASSUM (ASSUME_TAC o REWRITE_RULE [NOT_LESS]) \\
+  (* 0                m      h    d
+     |<---- args' ---->|<---as---->|
+     |<---- args  ---->| n, n+1, n+2
+   *)
+     cheat)
  >> cheat
  (* TODO
  >> Know ‘h < m’
@@ -1184,11 +1283,6 @@ Proof
      RW_TAC bool_ss [subterm_of_solvables] \\
      simp [Abbr ‘f’])
  >> DISCH_TAC
- (* applying subterm_of_absfree_hnf *)
- >> MP_TAC (Q.SPECL [‘X’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’, ‘r’]
-                    subterm_of_absfree_hnf)
- >> simp [hnf_appstar, GSYM appstar_APPEND, hnf_children_appstar]
- >> DISCH_THEN K_TAC (* already used *)
  (* eliminating ‘MAP VAR as’ *)
  >> Know ‘EL h (args' ++ MAP VAR as) = EL h args'’
  >- (MATCH_MP_TAC EL_APPEND1 >> rw [])

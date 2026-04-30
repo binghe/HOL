@@ -3175,6 +3175,14 @@ Proof
  >> rw [LENGTH_TAKE]
 QED
 
+Theorem IS_PREFIX_MEM :
+    !l l1 e. l1 <<= l /\ MEM e l1 ==> MEM e l
+Proof
+    RW_TAC std_ss [IS_PREFIX_EQ_TAKE']
+ >> MATCH_MP_TAC MEM_TAKE
+ >> Q.EXISTS_TAC ‘n’ >> ASM_REWRITE_TAC []
+QED
+
 (* NOTE: This theorem can also be proved by IS_PREFIX_LENGTH_ANTI and
    prefixes_is_prefix_total, but IS_PREFIX_EQ_TAKE is more natural.
  *)
@@ -3201,8 +3209,7 @@ Proof
  >> rw [LENGTH_FRONT, FRONT_TAKE]
  >> Q.EXISTS_TAC ‘n - 1’ >> rw []
  >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
- >> MATCH_MP_TAC TAKE_FRONT
- >> rw []
+ >> MATCH_MP_TAC TAKE_FRONT >> simp []
 QED
 
 Theorem IS_PREFIX_FRONT_CASES :
