@@ -230,13 +230,13 @@ Proof
 QED
 
 Theorem vsubterm_var :
-    !X y p r. FINITE X /\ y IN X UNION RANK r /\ p <> [] ==>
+    !X y p r. FINITE X /\ p <> [] ==>
               vsubterm X (VAR y) p r =
               SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)
 Proof
     Q.X_GEN_TAC ‘X’
  >> Suff ‘FINITE X ==>
-            !p y r. y IN X UNION RANK r /\ p <> [] ==>
+            !p y r. p <> [] ==>
                     vsubterm X (VAR y) p r =
                     SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)’
  >- METIS_TAC []
@@ -265,21 +265,12 @@ Proof
  >> fs [Abbr ‘m’, Abbr ‘j’]
  >> simp [Abbr ‘M2’]
  >> qabbrev_tac ‘m = LENGTH p’
- >> ‘r + SUC m - 1 = SUC r + m - 1’ by simp [] >> POP_ORW
- >> ‘r + SUC m = SUC r + m’ by simp [] >> POP_ORW
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> Suff ‘z IN RANK (SUC r)’ >- simp [IN_UNION]
- >> qunabbrev_tac ‘zs’
- >> Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “SUC h”)) ‘X’
- >> ‘zs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0]
- >> ‘MEM z zs’ by simp [Abbr ‘z’, LAST_MEM]
- >> MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘SUC h’, ‘X’] RNEWS_SUBSET_RANK)
+ >> Suff ‘m + SUC r - 1 = r + SUC m - 1’ >- Rewr
  >> simp []
- >> rw [SUBSET_DEF]
 QED
 
 Theorem vsubterm_var' :
-    !X y p r. FINITE X /\ y IN X UNION RANK r /\ p <> [] ==>
+    !X y p r. FINITE X /\ p <> [] ==>
               vsubterm' X (VAR y) p r = VAR (RNEW (r + LENGTH p - 1) (LAST p) X)
 Proof
     RW_TAC std_ss [vsubterm_var]
@@ -1274,10 +1265,16 @@ Proof
    *)
      Q.PAT_X_ASSUM ‘vsubterm X M (h::t) r <> NONE’ MP_TAC \\
     ‘hnf_children M1 = args’ by simp [] \\
+    ‘hnf_headvar M1 = y’ by simp [] \\
      Q.PAT_X_ASSUM ‘M0 = _’ (ASSUME_TAC o SYM) \\
      Q.PAT_X_ASSUM ‘M1 = _’ (ASSUME_TAC o SYM) \\
      Q_TAC (unbeta_tac [vsubterm_def]) ‘vsubterm X M (h::t) r’ \\
-    ‘h - m < d - m’ by simp [] \\
+     reverse (Cases_on ‘t = []’)
+     >- (simp [vsubterm_var] \\
+         SYM_TAC >> MATCH_MP_TAC lemma14b \\
+         simp [FV_thm] \\
+         cheat) \\
+     simp [] \\
      cheat)
  >> cheat
  (* TODO
