@@ -1261,15 +1261,23 @@ Proof
  >> Know ‘vsubterm X (VAR b @* args2) (h::t) r =
           vsubterm X (EL h args2) t (SUC r)’
  >- (MP_TAC (Q.SPECL [‘X’, ‘b’, ‘args2’, ‘h’, ‘t’, ‘r’]
-                     vsubterm_of_absfree_hnf_explicit) \\
-     simp [])
+                     vsubterm_of_absfree_hnf_explicit) >> simp [])
  >> Rewr'
  >> reverse (Cases_on ‘h < m’)
- >- (POP_ASSUM (ASSUME_TAC o REWRITE_RULE [NOT_LESS]) \\
+ >- (Know ‘EL h args2 = EL (h - LENGTH args') (MAP VAR as)’
+     >- (qunabbrev_tac ‘args2’ \\
+         MATCH_MP_TAC EL_APPEND2 >> simp []) \\
+     simp [EL_MAP] >> DISCH_THEN K_TAC \\
   (* 0                m      h    d
      |<---- args' ---->|<---as---->|
      |<---- args  ---->| n, n+1, n+2
    *)
+     Q.PAT_X_ASSUM ‘vsubterm X M (h::t) r <> NONE’ MP_TAC \\
+    ‘hnf_children M1 = args’ by simp [] \\
+     Q.PAT_X_ASSUM ‘M0 = _’ (ASSUME_TAC o SYM) \\
+     Q.PAT_X_ASSUM ‘M1 = _’ (ASSUME_TAC o SYM) \\
+     Q_TAC (unbeta_tac [vsubterm_def]) ‘vsubterm X M (h::t) r’ \\
+    ‘h - m < d - m’ by simp [] \\
      cheat)
  >> cheat
  (* TODO
