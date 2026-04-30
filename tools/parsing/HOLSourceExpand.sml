@@ -306,7 +306,13 @@ and expandDec _ (dec as DecSemi _) = DecExpansion {orig = dec, result = []}
   | expandDec top (DecLocal {local_, dec1, in_, dec2, end_, stop}) =
     DecLocal {local_ = local_, dec1 = map (expandDec false) dec1, in_ = in_,
       dec2 = map (expandDec top) dec2, end_ = end_, stop = stop}
-  | expandDec _ (dec as DecOpen _) = dec
+  | expandDec top (dec as DecOpen {open_, ...}) =
+    if top andalso quietOpen then let
+      val unit = Unit {left = open_, right = open_}
+      fun f x acc = mkSemi (valWild open_ (App (mkIdent (open_, x), unit)) :: acc)
+      val acc = mkSemi (dec :: f "HOL_Interactive.start_open" [])
+      in DecExpansion {orig = dec, result = rev (f "HOL_Interactive.end_open" acc)} end
+    else dec
   | expandDec _ (dec as DecInfix _) = dec
   | expandDec _ (dec as DecInfixr _) = dec
   | expandDec _ (dec as DecNonfix _) = dec
@@ -551,7 +557,7 @@ and expandDec _ (dec as DecSemi _) = DecExpansion {orig = dec, result = []}
     in DecExpansion {orig = dec, result = [valPat resume_ subname e]} end
   | expandDec _ (dec as HOLFinalise {finalise_, id, attrs, ...}) = let
     val fileline = fileline (#1 id)
-    val e = mkLocString' (finalise_, "boolLib.finalise_suspended_thm") fileline
+    val e = mkLocString' (finalise_, "markerLib.finalise_suspended_thm") fileline
     val e = App (e, mkNameAttrs mkKval id attrs)
     in DecExpansion {orig = dec, result = [valPat finalise_ (mkIdent id) e]} end
 
