@@ -1297,10 +1297,37 @@ Proof
      Know ‘EL (h - m) as = EL (h - m) l’
      >- (qunabbrev_tac ‘as’ \\
          MATCH_MP_TAC EL_FRONT >> simp [NULL_EQ_NIL]) >> Rewr' \\
-     simp [Abbr ‘l’, EL_DROP] \\
+     Know ‘EL (n + (h - m)) zs = EL (h - m) l’
+     >- simp [Abbr ‘l’, EL_DROP] >> Rewr' \\
      SYM_TAC >> MATCH_MP_TAC lemma14b \\
+     Q.PAT_X_ASSUM ‘l = SNOC b as’ K_TAC \\
      simp [FV_thm] \\
-     cheat)
+     reverse (Q.PAT_X_ASSUM ‘y IN FV M UNION set vs’
+                (STRIP_ASSUME_TAC o REWRITE_RULE [IN_UNION]))
+     >- (CCONTR_TAC >> rfs [] \\
+         Q.PAT_X_ASSUM ‘~MEM y l’ MP_TAC \\
+         simp [MEM_EL] \\
+         Q.EXISTS_TAC ‘h - m’ >> simp []) \\
+     simp [Abbr ‘l’, EL_DROP] \\
+     qabbrev_tac ‘i = h + n - m’ \\
+    ‘n <= i /\ i < LENGTH zs’ by simp [Abbr ‘i’] \\
+     Know ‘y IN X UNION RANK r’ >- PROVE_TAC [SUBSET_DEF] \\
+     simp [IN_UNION] >> STRIP_TAC
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set zs) X’ MP_TAC \\
+         simp [DISJOINT_ALT'] \\
+         CCONTR_TAC >> rfs [] \\
+         Q.PAT_X_ASSUM ‘!x. x IN X ==> ~MEM x zs’ (MP_TAC o Q.SPEC ‘y’) \\
+         simp [MEM_EL] \\
+         Q.EXISTS_TAC ‘i’ >> simp []) \\
+     MP_TAC (Q.SPECL [‘r’, ‘n + d - m + 1’, ‘X’]
+                     DISJOINT_RNEWS_RANK') >> simp [] \\
+     simp [DISJOINT_ALT'] \\
+     DISCH_THEN (MP_TAC o Q.SPEC ‘y’) >> art [] \\
+     DISCH_TAC \\
+     CCONTR_TAC >> rfs [] \\
+     Q.PAT_X_ASSUM ‘~MEM y zs’ MP_TAC \\
+     simp [MEM_EL] \\
+     Q.EXISTS_TAC ‘i’ >> simp [])
  >> cheat
  (* TODO
  (* eliminating ‘MAP VAR as’ *)
