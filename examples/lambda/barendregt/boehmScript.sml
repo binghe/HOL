@@ -40,10 +40,6 @@ Overload VAR = “term$VAR”
 
 val _ = temp_clear_overloads_on "fEL";
 
-fun qid_specl_tac []     = ALL_TAC
-  | qid_specl_tac (h::t) =
-    qid_specl_tac t >> qid_spec_tac h;
-
 (*---------------------------------------------------------------------------*
  *  Boehm Trees (and subterms) - name after Corrado Böhm [2]                 *
  *---------------------------------------------------------------------------*)
