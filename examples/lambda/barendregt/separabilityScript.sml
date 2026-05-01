@@ -1328,25 +1328,19 @@ Proof
      Q.PAT_X_ASSUM ‘~MEM y zs’ MP_TAC \\
      simp [MEM_EL] \\
      Q.EXISTS_TAC ‘i’ >> simp [])
- >> cheat
- (* TODO
  (* eliminating ‘MAP VAR as’ *)
+ >> Q.PAT_X_ASSUM ‘LENGTH args2 = d’ K_TAC
+ >> qunabbrev_tac ‘args2’
  >> Know ‘EL h (args' ++ MAP VAR as) = EL h args'’
  >- (MATCH_MP_TAC EL_APPEND1 >> rw [])
  >> Rewr'
- (* eliminating ‘vs’
-
-    NOTE: ‘subterm Y’ changed to ‘subterm Z’ at next level. There's no
-    flexibility here on the choice of excluded variabes.
-  *)
- >> Know ‘subterm X (LAMl vs (VAR y @* args)) (h::t) r =
-          subterm X (EL h args) t (SUC r)’
- >- (MP_TAC (Q.SPECL [‘X’, ‘LAMl vs (VAR y @* args)’, ‘h’, ‘t’, ‘r’]
-                     subterm_of_hnf) \\
-     simp [hnf_LAMl, hnf_appstar] \\
-     DISCH_THEN K_TAC (* already used *) \\
-     Q.PAT_X_ASSUM ‘M0 = LAMl vs (VAR y @* args)’ (REWRITE_TAC o wrap o SYM) \\
-     simp [hnf_children_hnf])
+ (* stage work *)
+ >> Q.PAT_X_ASSUM ‘vsubterm X M (h::t) r <> NONE’ MP_TAC
+ >> Know ‘vsubterm X M (h::t) r = vsubterm X (EL h args) t (SUC r)’
+ >- (‘hnf_children M1 = args’ by simp [] \\
+     Q.PAT_X_ASSUM ‘M0 = _’ (ASSUME_TAC o SYM) \\
+     Q.PAT_X_ASSUM ‘M1 = _’ (ASSUME_TAC o SYM) \\
+     Q_TAC (unbeta_tac [vsubterm_def]) ‘vsubterm X M (h::t) r’)
  >> Rewr'
  (* Now: subterm' Z (EL h args') t == [P/y] (subterm' Z (EL h args) t)
 
@@ -1362,17 +1356,13 @@ Proof
  >> Q.PAT_X_ASSUM ‘Boehm_transform p3’             K_TAC
  >> Q.PAT_X_ASSUM ‘apply p3 (P @* args') == _’     K_TAC
  >> qunabbrev_tac ‘p3’
- >> Q.PAT_X_ASSUM ‘h::t <> []’                     K_TAC
  >> qabbrev_tac ‘N  = EL h args’
  >> qabbrev_tac ‘N' = EL h args'’
  (* eliminating N' *)
  >> ‘N' = [P/y] N’ by simp [EL_MAP, Abbr ‘m’, Abbr ‘N’, Abbr ‘N'’, Abbr ‘args'’]
- >> POP_ORW
- >> qunabbrev_tac ‘N'’
+ >> POP_ORW >> qunabbrev_tac ‘N'’
  (* cleanup args' *)
- >> Q.PAT_X_ASSUM
-      ‘!i. i < m ==>
-           FV (EL i args') SUBSET FV (EL i args)’  K_TAC
+ >> Q.PAT_X_ASSUM ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’ K_TAC
  >> Q.PAT_X_ASSUM ‘LENGTH args' = m’               K_TAC
  >> qunabbrev_tac ‘args'’
  (* cleanup l, as and b *)
@@ -1390,6 +1380,8 @@ Proof
      qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘vs’] >> simp [])
  >> ASM_SIMP_TAC std_ss [hnf_head_hnf, var_name_thm]
  >> DISCH_TAC (* y IN X UNION RANK (SUC r) *)
+ >> cheat
+ (* TODO
  (* applying subterm_subst_permutator_cong *)
  >> MATCH_MP_TAC subterm_subst_permutator_cong'
  >> Q.EXISTS_TAC ‘d’
