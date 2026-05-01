@@ -6858,6 +6858,30 @@ Proof
   rw_tac std_ss[MAX_LIST_def]
 QED
 
+Theorem MAX_LIST_APPEND :
+    !l1 l2. MAX_LIST (l1 ++ l2) = MAX (MAX_LIST l1) (MAX_LIST l2)
+Proof
+    Induct_on ‘l1’ >> rw [MAX_ASSOC]
+QED
+
+Theorem MAX_LIST_APPEND_COMM :
+    !l1 l2. MAX_LIST (l1 ++ l2) = MAX_LIST (l2 ++ l1)
+Proof
+    rw [MAX_LIST_APPEND, Once MAX_COMM]
+QED
+
+Theorem MAX_LIST_LE_PREFIX :
+    !l1 l2. l1 <<= l2 ==> MAX_LIST l1 <= MAX_LIST l2
+Proof
+    rw [IS_PREFIX_APPEND]
+ >> ONCE_REWRITE_TAC [MAX_LIST_APPEND_COMM]
+ >> qid_spec_tac ‘l’
+ >> Induct_on ‘l’ >- simp []
+ >> Q.X_GEN_TAC ‘h’
+ >> Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘MAX_LIST (l ++ l1)’
+ >> simp [APPEND, MAX_LIST_LE]
+QED
+
 (* Theorem: (!x. f x <= g x) ==> !ls. MAX_LIST (MAP f ls) <= MAX_LIST (MAP g ls) *)
 (* Proof:
    By induction on ls.

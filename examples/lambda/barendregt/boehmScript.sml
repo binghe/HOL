@@ -2656,7 +2656,7 @@ Proof
 QED
 
 Theorem subterm_width_inclusive :
-    !M p q. q <<= p /\ subterm_width M p <= d ==> subterm_width M q <= d
+    !M p q d. q <<= p /\ subterm_width M p <= d ==> subterm_width M q <= d
 Proof
     simp [subterm_width_def]
  >> rpt GEN_TAC
@@ -2676,7 +2676,7 @@ Proof
 QED
 
 Theorem subterm_length_inclusive :
-    !M p q. q <<= p /\ subterm_length M p <= d ==> subterm_length M q <= d
+    !M p q d. q <<= p /\ subterm_length M p <= d ==> subterm_length M q <= d
 Proof
     simp [subterm_length_def]
  >> rpt GEN_TAC

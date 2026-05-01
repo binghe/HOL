@@ -899,9 +899,146 @@ Proof
  >> MATCH_MP_TAC MAX_LIST_PROPERTY >> art []
 QED
 
+Theorem vsubterm_width_nil :
+    !M. vsubterm_width M [] =
+        if solvable M then MAX (hnf_children_size (principal_hnf M)) 1 else 1
+Proof
+    rw [vsubterm_width_def, subterm_width_def]
+QED
+
+Theorem vsubterm_width_inclusive :
+    !M p q d. q <<= p /\ vsubterm_width M p <= d ==> vsubterm_width M q <= d
+Proof
+    rpt GEN_TAC
+ >> simp [vsubterm_width_def]
+ >> STRIP_TAC
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC subterm_width_inclusive \\
+     Q.EXISTS_TAC ‘p’ >> art [])
+ >> Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘SUC (MAX_LIST p)’
+ >> simp []
+ >> MATCH_MP_TAC MAX_LIST_LE_PREFIX >> art []
+QED
+
 (*---------------------------------------------------------------------------*
  *  "Boehm out" technique for single terms at arbitrary path                 *
  *---------------------------------------------------------------------------*)
+
+(* cf. solvable_subst_permutator. Now we work with vsubterm_width *)
+Theorem solvable_subst_permutator' :
+    !X M r P v d.
+       FINITE X /\ FV M SUBSET X UNION RANK r /\
+       v IN X UNION RANK r /\ P = permutator d /\
+       solvable M /\ vsubterm_width M [] <= d
+   ==> solvable ([P/v] M) /\ vsubterm_width ([P/v] M) [] <= d
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘P = permutator d’ (REWRITE_TAC o wrap)
+ >> qabbrev_tac ‘P = permutator d’
+ >> qabbrev_tac ‘M0 = principal_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> qabbrev_tac ‘M1 = principal_hnf (M0 @* MAP VAR vs)’
+ >> ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma']
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y :string”, “args :term list”)) ‘M1’
+ >> ‘TAKE n vs = vs’ by simp []
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘M0 == M’ by simp [Abbr ‘M0’, lameq_principal_hnf']
+ >> ‘[P/v] M0 == [P/v] M’ by simp [lameq_sub_cong]
+ >> ‘FV P = {}’ by simp [Abbr ‘P’, FV_permutator]
+ >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT']
+ >> Know ‘~MEM v vs’
+ >- (Q.PAT_X_ASSUM ‘v IN X UNION RANK r’ MP_TAC \\
+     rw [IN_UNION]
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
+         rw [DISJOINT_ALT']) \\
+     Suff ‘DISJOINT (RANK r) (set vs)’ >- rw [DISJOINT_ALT] \\
+     qunabbrev_tac ‘vs’ \\
+     MATCH_MP_TAC DISJOINT_RANK_RNEWS' >> art [])
+ >> DISCH_TAC
+ >> Know ‘LENGTH args <= d’
+ >- (Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘vsubterm_width M []’ >> art [] \\
+     Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width M []’ >> simp [] \\
+     simp [hnf_children_size_thm, subterm_width_nil])
+ >> DISCH_TAC
+ >> CONJ_ASM1_TAC
+ >- (Suff ‘solvable ([P/v] M0)’ >- PROVE_TAC [lameq_solvable_cong] \\
+     simp [LAMl_SUB, appstar_SUB] \\
+     reverse (Cases_on ‘y = v’)
+     >- (simp [SUB_THM] \\
+         MATCH_MP_TAC hnf_solvable >> rw [hnf_appstar]) \\
+     simp [solvable_iff_has_hnf, has_hnf_thm] \\
+     qabbrev_tac ‘args' = MAP [P/v] args’ \\
+     qabbrev_tac ‘m = LENGTH args’ \\
+    ‘LENGTH args' = m’ by simp [Abbr ‘args'’] \\
+    ‘LENGTH args' <= d’ by simp [Abbr ‘args'’] \\
+  (* applying hreduce_permutator_thm *)
+     MP_TAC (Q.SPECL [‘{}’, ‘d’, ‘args'’] hreduce_permutator_thm) \\
+     rw [Abbr ‘P’] \\
+     Q.EXISTS_TAC ‘LAMl xs (LAM y (VAR y @* args' @* MAP VAR xs))’ \\
+     rw [hnf_appstar, hnf_thm])
+ (* extra goal for induction *)
+ >> Q.PAT_X_ASSUM ‘vsubterm_width M [] <= d’ MP_TAC
+ >> simp [vsubterm_width_nil]
+ >> DISCH_TAC
+ (* applying principal_hnf_hreduce, hreduces_hnf_imp_principal_hnf, etc.
+
+    M -h->* M0 = LAMl vs (VAR y @* args)
+    [P/v] M -h->* [P/v] (LAMl vs (VAR y @* args))
+  *)
+ >> Know ‘[P/v] M -h->* [P/v] M0’
+ >- (MATCH_MP_TAC hreduce_substitutive \\
+     METIS_TAC [principal_hnf_thm'])
+ >> simp [LAMl_SUB, appstar_SUB]
+ >> reverse (Cases_on ‘y = v’)
+ >- (simp [SUB_THM, solvable_iff_has_hnf] \\
+     DISCH_TAC \\
+     qabbrev_tac ‘args' = MAP [P/v] args’ \\
+    ‘hnf (LAMl vs (VAR y @* args'))’ by rw [hnf_appstar] \\
+    ‘principal_hnf ([P/v] M) = LAMl vs (VAR y @* args')’
+       by METIS_TAC [principal_hnf_thm'] >> POP_ORW \\
+     qabbrev_tac ‘m = LENGTH args’ \\
+    ‘LENGTH args' = m’ by rw [Abbr ‘args'’] \\
+     simp [])
+ (* stage work *)
+ >> simp []
+ >> qabbrev_tac ‘args' = MAP [P/v] args’
+ >> DISCH_TAC
+ >> qabbrev_tac ‘m = LENGTH args’
+ >> ‘LENGTH args' = m’ by rw [Abbr ‘args'’]
+ >> MP_TAC (Q.SPECL [‘{}’, ‘d’, ‘args'’] hreduce_permutator_thm)
+ >> simp []
+ >> STRIP_TAC
+ >> ‘LAMl vs (P @* args') -h->*
+     LAMl vs (LAMl xs (LAM y' (VAR y' @* args' @* MAP VAR xs)))’
+       by rw [hreduce_LAMl]
+ >> Know ‘[P/v] M -h->* LAMl vs (LAMl xs (LAM y' (VAR y' @* args' @* MAP VAR xs)))’
+ >- (MATCH_MP_TAC hreduce_TRANS \\
+     Q.EXISTS_TAC ‘LAMl vs (P @* args')’ >> art [])
+ >> REWRITE_TAC [GSYM LAMl_APPEND, GSYM appstar_APPEND, GSYM LAMl_SNOC]
+ >> qabbrev_tac ‘ys = SNOC y' (vs ++ xs)’
+ >> qabbrev_tac ‘args2 = args' ++ MAP VAR xs’
+ >> DISCH_TAC
+ >> ‘hnf (LAMl ys (VAR y' @* args2))’ by rw [hnf_appstar]
+ >> ‘principal_hnf ([P/v] M) = LAMl ys (VAR y' @* args2)’
+       by METIS_TAC [principal_hnf_thm']
+ >> POP_ORW
+ >> simp [Abbr ‘args2’]
+QED
+
+Theorem solvable_subst_permutator_cong' :
+    !X M r P v d.
+       FINITE X /\ FV M SUBSET X UNION RANK r /\
+       v IN X UNION RANK r /\ P = permutator d /\
+       vsubterm_width M [] <= d ==> (solvable ([P/v] M) <=> solvable M)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >- PROVE_TAC [unsolvable_subst]
+ >> DISCH_TAC
+ >> MATCH_MP_TAC (cj 1 solvable_subst_permutator')
+ >> qexistsl_tac [‘X’, ‘r’, ‘d’] >> art []
+QED
 
 (* NOTE: v, P and d are fixed free variables here *)
 Theorem vsubterm_subst_permutator_cong_lemma[local] :
@@ -1028,8 +1165,24 @@ Proof
      MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘r’] subterm_width_first) \\
      rw [Abbr ‘w’])
  >> DISCH_TAC
- >> cheat
- (* TODO
+ (* NOTE: ‘[P/v] M’ is solvable iff ‘[P/v] M0’ is solvable, the latter is either
+    already a hnf (v <> y), or can be head-reduced to a hnf (v = y).
+  *)
+ >> Know ‘solvable ([P/v] M)’
+ >- (MATCH_MP_TAC (cj 1 solvable_subst_permutator') \\
+     qexistsl_tac [‘X’, ‘r’, ‘d’] >> simp [] \\
+     MATCH_MP_TAC vsubterm_width_inclusive \\
+     Q.EXISTS_TAC ‘h::t’ >> simp [])
+ >> DISCH_TAC
+ >> Know ‘~MEM v vs’
+ >- (Q.PAT_X_ASSUM ‘v IN Y’ MP_TAC \\
+     rw [Abbr ‘Y’, IN_UNION]
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
+         rw [DISJOINT_ALT']) \\
+     Suff ‘DISJOINT (RANK r) (set vs)’ >- rw [DISJOINT_ALT] \\
+     qunabbrev_tac ‘vs’ \\
+     MATCH_MP_TAC DISJOINT_RANK_RNEWS' >> art [])
+ >> DISCH_TAC
  (* KEY: some shared subgoals needed at the end, before rewriting ‘[P/v] M’:
 
     2. subterm X (EL h args) t (SUC r) <> NONE
@@ -1037,7 +1190,7 @@ Proof
 
     NOTE: the last subgoal requires deep properties of ‘subterm_width’. The
     involved tactics are not to be repeated in other parts of this lemma.
-  *)
+
  >> Know ‘subterm X (EL h args) t (SUC r) <> NONE /\
           subterm_width (EL h args) t <= d’
  >- (CONJ_ASM1_TAC (* subterm X (EL h args) t (SUC r) <> NONE *)
@@ -1052,22 +1205,8 @@ Proof
      MATCH_MP_TAC subterm_width_induction_lemma' \\
      qexistsl_tac [‘X’, ‘r’, ‘M0’, ‘n’, ‘vs’, ‘M1’] >> simp [])
  >> STRIP_TAC
- >> Know ‘~MEM v vs’
- >- (Q.PAT_X_ASSUM ‘v IN Y’ MP_TAC \\
-     rw [Abbr ‘Y’, IN_UNION]
-     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
-         rw [DISJOINT_ALT']) \\
-     Suff ‘DISJOINT (RANK r) (set vs)’ >- rw [DISJOINT_ALT] \\
-     qunabbrev_tac ‘vs’ \\
-     MATCH_MP_TAC DISJOINT_RANK_RNEWS' >> art [])
- >> DISCH_TAC
- (* NOTE: ‘[P/v] M’ is solvable iff ‘[P/v] M0’ is solvable, the latter is either
-    already a hnf (v <> y), or can be head-reduced to a hnf (v = y).
   *)
- >> Know ‘solvable ([P/v] M)’
- >- (MATCH_MP_TAC (cj 1 solvable_subst_permutator) \\
-     qexistsl_tac [‘X’, ‘r’, ‘d’] >> simp [subterm_width_nil])
- >> DISCH_TAC
+
  (* Now we need to know the exact form of ‘principal_hnf ([P/v] M)’.
 
     We know that ‘principal_hnf M = M0 = LAMl vs (VAR y @* args)’, which means
@@ -1095,11 +1234,13 @@ Proof
  >> Know ‘[P/v] M -h->* [P/v] M0’ >- PROVE_TAC [hreduce_substitutive]
  >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT', FV_permutator, Abbr ‘P’]
  >> simp [LAMl_SUB, appstar_SUB]
-  >> qabbrev_tac ‘args' = MAP [P/v] args’
- >> ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’]
+ >> qabbrev_tac ‘args' = MAP [P/v] args’
+ >> ‘LENGTH args' = m’ by rw [Abbr ‘args'’]
  (* LHS rewriting of args', this will introduce M0' = principal_hnf ([P/v] M)
     and a new set of abbreviations (vs', n', ...).
   *)
+ >> cheat
+ (* TODO
  >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::q) r”)
  >> qmatch_abbrev_tac ‘f _’
  >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
@@ -1406,34 +1547,33 @@ Proof
 QED
 
 (* This theorem can be repeatedly applied for ‘M ISUB ss’ *)
-Theorem subterm_subst_permutator_cong :
+Theorem vsubterm_subst_permutator_cong :
     !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANK r /\
-                    subterm X M p r <> NONE /\
+                    vsubterm X M p r <> NONE /\
                     P = permutator d /\ y IN X UNION RANK r /\
-                    subterm_width M p <= d
-                ==> subterm X ([P/y] M) p r <> NONE /\
-                    subterm_width ([P/y] M) p <= d /\
-                    subterm' X ([P/y] M) p r = [P/y] (subterm' X M p r)
+                    vsubterm_width M p <= d
+                ==> vsubterm X ([P/y] M) p r <> NONE /\
+                    vsubterm_width ([P/y] M) p <= d /\
+                    vsubterm' X ([P/y] M) p r = [P/y] (vsubterm' X M p r)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> irule subterm_subst_permutator_cong_lemma >> art []
+ >> irule vsubterm_subst_permutator_cong_lemma >> art []
  >> Q.EXISTS_TAC ‘p’ >> rw []
 QED
 
 (* NOTE: This reduced version is suitable for MATCH_MP_TAC later. *)
-Theorem subterm_subst_permutator_cong'[local] :
+Theorem vsubterm_subst_permutator_cong'[local] :
     !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANK r /\
-                    subterm X M p r <> NONE /\
+                    vsubterm X M p r <> NONE /\
                     P = permutator d /\ y IN X UNION RANK r /\
-                    subterm_width M p <= d
-                ==> subterm X ([P/y] M) p r <> NONE /\
-                    subterm' X ([P/y] M) p r = [P/y] (subterm' X M p r)
+                    vsubterm_width M p <= d
+                ==> vsubterm X ([P/y] M) p r <> NONE /\
+                    vsubterm' X ([P/y] M) p r = [P/y] (vsubterm' X M p r)
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘M’, ‘r’, ‘y’, ‘P’, ‘d’]
-                    subterm_subst_permutator_cong) >> rw []
+                    vsubterm_subst_permutator_cong) >> rw []
 QED
-*)
 
 (* cf. Boehm_transform_exists_lemma (for subterm)
 
