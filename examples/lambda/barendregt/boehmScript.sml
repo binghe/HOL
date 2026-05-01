@@ -3942,8 +3942,7 @@ Theorem subterm_subst_permutator_cong'[local] :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘M’, ‘r’, ‘y’, ‘P’, ‘d’]
-                    subterm_subst_permutator_cong)
- >> rw []
+                    subterm_subst_permutator_cong) >> rw []
 QED
 
 Theorem subterm_isub_permutator_cong :
