@@ -883,6 +883,12 @@ Proof
     rw [vsubterm_width_def]
 QED
 
+Theorem vsubterm_width_ge_1[simp] :
+    1 <= vsubterm_width M p
+Proof
+    rw [vsubterm_width_def]
+QED
+
 (* NOTE: This is the main purpose of introducing ‘vsubterm_width’. *)
 Theorem vsubterm_width_thm :
     !p M e. MEM e p ==> e < vsubterm_width M p
@@ -897,7 +903,6 @@ QED
  *  "Boehm out" technique for single terms at arbitrary path                 *
  *---------------------------------------------------------------------------*)
 
-(* TODO
 (* NOTE: v, P and d are fixed free variables here *)
 Theorem vsubterm_subst_permutator_cong_lemma[local] :
     !X. FINITE X ==>
@@ -908,15 +913,18 @@ Theorem vsubterm_subst_permutator_cong_lemma[local] :
                   P = permutator d /\ v IN X UNION RANK r
               ==> vsubterm X ([P/v] M) q r <> NONE /\
                   vsubterm_width ([P/v] M) q <= d /\
-                  vsubterm' X ([P/v] M) q r = [P/v] (subterm' X M q r)
+                  vsubterm' X ([P/v] M) q r = [P/v] (vsubterm' X M q r)
 Proof
     NTAC 2 STRIP_TAC
- (* NOTE: After the last modification of subterm_width_def, the base case is
-    non-trivial now. *)
  >> Induct_on ‘q’
  >- (rw [] \\
      qabbrev_tac ‘P = permutator d’ \\
-     Cases_on ‘solvable ([P/v] M)’ >> rw [subterm_width_def] \\
+     Know ‘1 <= d’
+     >- (Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘vsubterm_width M p’ >> simp []) \\
+     DISCH_TAC \\
+     Cases_on ‘solvable ([P/v] M)’ \\ (* 2 subgoals, same tactics *)
+     rw [vsubterm_width_def, subterm_width_def] \\
+  (* only one goal is left *)
     ‘solvable M’ by PROVE_TAC [unsolvable_subst] \\
      qabbrev_tac ‘M0 = principal_hnf M’ \\
      qabbrev_tac ‘n = LAMl_size M0’ \\
@@ -942,7 +950,8 @@ Proof
      qabbrev_tac ‘args' = MAP [P/v] args’ \\
     ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’] \\
      Know ‘LENGTH args <= d’
-     >- (Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width M p’ >> art [] \\
+     >- (Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘vsubterm_width M p’ >> art [] \\
+         Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width M p’ >> simp [] \\
         ‘LENGTH args = hnf_children_size (principal_hnf M)’ by rw [] \\
          POP_ORW \\
          MATCH_MP_TAC subterm_width_first \\
@@ -975,29 +984,30 @@ Proof
      simp [hnf_children_size_LAMl, GSYM appstar_APPEND])
  (* stage work *)
  >> rpt GEN_TAC >> STRIP_TAC
- >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [BT_ltree_paths_thm]
  (* re-define P as abbreviations *)
  >> Q.PAT_X_ASSUM ‘P = permutator d’ (FULL_SIMP_TAC std_ss o wrap)
  >> qabbrev_tac ‘P = permutator d’
  >> qabbrev_tac ‘Y = X UNION RANK r’
  >> Cases_on ‘p = []’ >- fs []
- (* common properties of ‘p’ (this requires ‘p <> []’) *)
+ (* common properties of ‘p’ (this requires ‘p <> []’)
  >> ‘(!q. q <<= p ==> subterm X M q r <> NONE) /\
      (!q. q <<= FRONT p ==> solvable (subterm' X M q r))’
        by PROVE_TAC [subterm_solvable_lemma]
- >> qabbrev_tac ‘w = subterm_width M p’
+  *)
+ >> qabbrev_tac ‘w = vsubterm_width M p’
  (* decompose ‘p’ and eliminate ‘p <> []’ *)
- >> Cases_on ‘p’ >> fs []
- (* cleanup assumptions *)
- >> Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM) >> T_TAC
- (* preparing for eliminating ‘subterm' X M (h::q)’ *)
+ >> Cases_on ‘p’ >> fs [] >> T_TAC
+ >> Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM)
+ (* preparing for eliminating ‘vsubterm' X M (h::q)’ *)
  >> Know ‘solvable M’
- >- (Q.PAT_X_ASSUM ‘!q. q <<= FRONT (h::t) ==> solvable _’
-       (MP_TAC o (Q.SPEC ‘[]’)) >> rw [])
+ >- (CCONTR_TAC \\
+     Q.PAT_X_ASSUM ‘vsubterm X M (h::t) r <> NONE’ MP_TAC \\
+     simp [vsubterm_def])
  >> DISCH_TAC
- >> Know ‘subterm X M (h::q) r <> NONE’
- >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
- >> UNBETA_TAC [subterm_of_solvables] “subterm X M (h::q) r”
+ >> Know ‘vsubterm X M (h::q) r <> NONE’
+ >- (‘h::q <<= h::t’ by simp [] \\
+     METIS_TAC [vsubterm_is_none_inclusive])
+ >> UNBETA_TAC [vsubterm_of_solvables] “vsubterm X M (h::q) r”
  >> STRIP_TAC
  >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
@@ -1013,9 +1023,13 @@ Proof
  >> qunabbrev_tac ‘Ms’
  >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
  >> Know ‘m <= w’
- >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘r’] subterm_width_first) \\
+ >- (Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width M (h::t)’ \\
+     reverse CONJ_TAC >- simp [Abbr ‘w’] \\
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘r’] subterm_width_first) \\
      rw [Abbr ‘w’])
  >> DISCH_TAC
+ >> cheat
+ (* TODO
  (* KEY: some shared subgoals needed at the end, before rewriting ‘[P/v] M’:
 
     2. subterm X (EL h args) t (SUC r) <> NONE
@@ -1388,6 +1402,7 @@ Proof
  >> simp []
  >> Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm' X M (h::q') r’
  >> simp []
+ *)
 QED
 
 (* This theorem can be repeatedly applied for ‘M ISUB ss’ *)
