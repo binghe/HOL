@@ -10,7 +10,7 @@ Ancestors
   head_reduction standardisation solvable boehm takahashiS3 lameta_complete
 Libs
   hurdUtils tautLib numLib listLib NEWLib reductionEval head_reductionLib
-  monadsyntax
+  monadsyntax BasicProvers
 
 (* enable basic monad support *)
 val _ = enable_monadsyntax ();
@@ -1235,16 +1235,14 @@ Proof
  (* LHS rewriting of args', this will introduce M0' = principal_hnf ([P/v] M)
     and a new set of abbreviations (vs', n', ...).
   *)
+ >> CONV_TAC (UNBETA_CONV “vsubterm X ([P/v] M) (h::q) r”)
+ >> qmatch_abbrev_tac ‘f _’
+ >> ASM_SIMP_TAC std_ss [vsubterm_of_solvables]
+ >> LET_ELIM_TAC
+ >> simp [Abbr ‘f’, hnf_children_hnf]
+ >> Q.PAT_X_ASSUM ‘m = m’ K_TAC (* strange *)
  >> cheat
  (* TODO
- >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::q) r”)
- >> qmatch_abbrev_tac ‘f _’
- >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
- >> LET_ELIM_TAC
- >> Q.PAT_X_ASSUM ‘subterm X (EL h args) q (SUC r) <> NONE’ MP_TAC
- >> simp [Abbr ‘f’, hnf_children_hnf]
- >> DISCH_TAC (* subterm X (EL h args) q (SUC r) <> NONE *)
- >> Q.PAT_X_ASSUM ‘m = m’ K_TAC
  (* Case 2 (easy: vs = vs' /\ m = m') *)
  >> reverse (Cases_on ‘y = v’)
  >- (simp [LAMl_SUB, appstar_SUB] \\

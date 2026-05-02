@@ -3612,9 +3612,7 @@ Proof
  >> qmatch_abbrev_tac ‘f _’
  >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
  >> LET_ELIM_TAC
- >> Q.PAT_X_ASSUM ‘subterm X (EL h args) q (SUC r) <> NONE’ MP_TAC
  >> simp [Abbr ‘f’, hnf_children_hnf]
- >> DISCH_TAC (* subterm X (EL h args) q (SUC r) <> NONE *)
  >> Q.PAT_X_ASSUM ‘m = m’ K_TAC
  (* Case 2 (easy: vs = vs' /\ m = m') *)
  >> reverse (Cases_on ‘y = v’)
