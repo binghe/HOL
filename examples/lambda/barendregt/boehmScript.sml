@@ -3129,7 +3129,6 @@ QED
 Theorem subterm_width_induction_lemma' :
     !X M h p r M0 n m vs M1 Ms d.
          FINITE X /\ FV M SUBSET X UNION RANK r /\
-         h::p IN ltree_paths (BT' X M r) /\
          solvable M /\
          M0 = principal_hnf M /\
           n = LAMl_size M0 /\
@@ -3640,30 +3639,7 @@ Proof
          >- (rw [FV_SUB] \\
              MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M’ >> art [] \\
              SET_TAC []) \\
-         fs [Abbr ‘m’, Abbr ‘args'’] \\
-      (* remaining goal: h::q IN ltree_paths (BT' X ([P/v] M) r) *)
-         irule (iffRL BT_ltree_paths_thm) >> art [] \\
-         reverse CONJ_TAC
-         >- (rw [FV_SUB] \\
-             MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M’ >> art [] \\
-             SET_TAC []) \\
-         Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X ([P/v] M) (h::q) r’ \\
-         simp [principal_hnf_beta_reduce, EL_MAP] \\
-         qabbrev_tac ‘N = EL h args’ \\
-         Q.PAT_X_ASSUM ‘!M p r. _’ (MP_TAC o Q.SPECL [‘N’, ‘t’, ‘SUC r’]) \\
-         simp [] \\
-         Know ‘v IN X UNION RANK (SUC r)’
-         >- (Q.PAT_X_ASSUM ‘v IN Y’ MP_TAC \\
-             Suff ‘Y SUBSET X UNION RANK (SUC r)’ >- rw [SUBSET_DEF] \\
-             qunabbrev_tac ‘Y’ \\
-             Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
-             rw [RANK_MONO]) >> Rewr \\
-         Suff ‘FV N SUBSET X UNION RANK (SUC r)’ >- rw [] \\
-         qunabbrev_tac ‘N’ \\
-         MATCH_MP_TAC subterm_induction_lemma' \\
-         qexistsl_tac [‘M’, ‘principal_hnf M’, ‘LENGTH vs’, ‘LENGTH args’,
-                       ‘vs’, ‘M1’] \\
-         simp [LAMl_size_hnf, Abbr ‘M1’, principal_hnf_beta_reduce]) >> Rewr' \\
+         fs [Abbr ‘m’, Abbr ‘args'’]) >> Rewr' \\
   (* now applying IH *)
      fs [Abbr ‘m’, Abbr ‘args'’, EL_MAP] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
@@ -3810,31 +3786,9 @@ Proof
      >- (rw [FV_SUB] >- rw [Abbr ‘P’, FV_permutator] \\
          MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M’ >> art [] \\
          SET_TAC []) \\
-     reverse CONJ_TAC (* h < m' *)
-     >- (MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
-         Q.EXISTS_TAC ‘m’ >> art [] \\
-         simp [Abbr ‘m'’, Abbr ‘Ms’, hnf_children_hnf]) \\
-     irule (iffRL BT_ltree_paths_thm) >> simp [] \\
-     simp [subterm_of_solvables, appstar_APPEND] \\
-     simp [GSYM appstar_APPEND, hnf_children_hnf] \\
-     Know ‘EL h (args' ++ ls) = EL h args'’
-     >- (MATCH_MP_TAC EL_APPEND1 >> rw [Abbr ‘args'’]) >> Rewr' \\
-     ASM_SIMP_TAC list_ss [Abbr ‘args'’, EL_MAP] \\
-     Q.PAT_X_ASSUM ‘!M p r. _’ (MP_TAC o Q.SPECL [‘EL h args’, ‘t’, ‘SUC r’]) \\
-     simp [] \\
-     Know ‘y IN X UNION RANK (SUC r)’
-     >- (Q.PAT_X_ASSUM ‘y IN Y’ MP_TAC \\
-         Suff ‘Y SUBSET X UNION RANK (SUC r)’ >- rw [SUBSET_DEF] \\
-         qunabbrev_tac ‘Y’ \\
-         Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
-         rw [RANK_MONO]) >> Rewr \\
-     Suff ‘FV (EL h args) SUBSET X UNION RANK (SUC r)’ >- rw [] \\
-     MATCH_MP_TAC subterm_induction_lemma' \\
-     qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] \\
-     simp [LAMl_size_hnf, principal_hnf_beta_reduce] \\
-     Q.PAT_X_ASSUM ‘LAMl vs M1 = M0’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-     Q.PAT_X_ASSUM ‘VAR y @* args = M1’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-     simp [hnf_children_appstar])
+     MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
+     Q.EXISTS_TAC ‘m’ >> art [] \\
+     simp [Abbr ‘m'’, Abbr ‘Ms’, hnf_children_hnf])
  >> Rewr'
  >> Know ‘EL h Ms = EL h args'’
  >- (simp [Abbr ‘Ms’, hnf_children_hnf] \\
