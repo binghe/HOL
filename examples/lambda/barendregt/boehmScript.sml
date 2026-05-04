@@ -2803,6 +2803,126 @@ Proof
  >> Q.EXISTS_TAC ‘q’ >> rw []
 QED
 
+Theorem subterm_width_var[simp] :
+    subterm_width (VAR y) p = 0
+Proof
+    RW_TAC std_ss [subterm_width_def]
+ >> qmatch_abbrev_tac ‘MAX_SET s = 0’
+ >> Know ‘FINITE s’
+ >- (qunabbrev_tac ‘s’ \\
+     irule IMAGE_FINITE \\
+     simp [FINITE_prefix])
+ >> DISCH_TAC
+ >> Know ‘s <> {}’
+ >- (rw [Abbr ‘s’, Once EXTENSION] \\
+     Q.EXISTS_TAC ‘[]’ >> simp [])
+ >> DISCH_TAC
+ >> simp [MAX_SET_EQ_0]
+ >> NTAC 2 (POP_ASSUM K_TAC)
+ >> rw [Abbr ‘s’, Once EXTENSION]
+ >> reverse EQ_TAC
+ >- (rw [] \\
+     Q.EXISTS_TAC ‘[]’ >> rw [subterm_def] \\
+    ‘hnf (VAR y)’ by simp [hnf_thm] \\
+    ‘principal_hnf (VAR y) = VAR y’ by simp [principal_hnf_reduce] \\
+     POP_ORW \\
+     simp [hnf_children_size_thm])
+ >> NTAC 2 (rw [])
+ >> qabbrev_tac ‘X = {y}’
+ >> Q.PAT_X_ASSUM ‘subterm X (VAR y) q 0 <> NONE’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘solvable (subterm' X (VAR y) q 0)’ MP_TAC
+ >> Cases_on ‘q’
+ >- (simp [subterm_def] \\
+    ‘principal_hnf (VAR y) = VAR y’ by simp [principal_hnf_reduce] \\
+     POP_ORW \\
+     simp [hnf_children_size_thm])
+ >> ‘solvable (VAR y)’ by REWRITE_TAC [solvable_VAR]
+ >> Q_TAC (UNBETA_TAC [subterm_def]) ‘subterm X (VAR y) (h::t) 0’
+ >> rw []
+ >> Cases_on ‘p’ >> fs [] >> T_TAC
+ >> Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM)
+ >> ‘M0 = VAR y’ by simp [Abbr ‘M0’, principal_hnf_reduce]
+ >> POP_ASSUM (fs o wrap)
+ >> qunabbrev_tac ‘M0’
+ >> qunabbrev_tac ‘n’
+ >> ‘FINITE X’ by simp [Abbr ‘X’]
+ >> ‘LENGTH vs = 0’ by METIS_TAC [NEWS_def]
+ >> ‘vs = []’ by ASM_SIMP_TAC std_ss [GSYM LENGTH_NIL]
+ >> POP_ASSUM (fs o wrap)
+ >> qunabbrev_tac ‘vs’
+ >> ‘Ms = []’ by simp [Abbr ‘Ms’, Abbr ‘M1’, hnf_children_thm]
+ >> fs [Abbr ‘m’]
+QED
+
+Theorem subterm_width_eq_first :
+    !X M h p r M0 n m vs.
+         FINITE X /\ FV M SUBSET X UNION RANK r /\
+         solvable M /\
+         M0 = principal_hnf M /\
+          n = LAMl_size M0 /\
+          m = hnf_children_size M0 /\ ~(h < m) ==>
+         subterm_width M (h::p) = m
+Proof
+    RW_TAC std_ss []
+ (* applying subterm_width_thm *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_width_thm) >> simp []
+ >> DISCH_THEN K_TAC (* used already *)
+ >> qabbrev_tac ‘M0 = principal_hnf M’
+ >> qabbrev_tac ‘m = hnf_children_size M0’
+ >> qmatch_abbrev_tac ‘MAX_SET (IMAGE f s) = m’
+ >> Know ‘s = [] INSERT {h::q | q <<= p}’
+ >- (rw [Abbr ‘s’, Once EXTENSION] \\
+     Cases_on ‘x’ >> simp [])
+ >> Rewr'
+ >> simp [IMAGE_INSERT]
+ >> ‘f [] = m’ by simp [Abbr ‘f’] >> POP_ORW
+ >> qabbrev_tac ‘s' = {h::q | q <<= p}’
+ >> Know ‘FINITE (IMAGE f s')’
+ >- (irule IMAGE_FINITE \\
+     Know ‘s' = s DELETE []’
+     >- (rw [Abbr ‘s’, Abbr ‘s'’, Once EXTENSION] \\
+         Cases_on ‘x’ >> simp []) >> Rewr' \\
+     simp [FINITE_DELETE] \\
+     simp [Abbr ‘s’, FINITE_prefix])
+ >> DISCH_TAC
+ >> simp [MAX_SET_THM]
+ >> Suff ‘MAX_SET (IMAGE f s') = 0’ >- simp []
+ >> simp [MAX_SET_EQ_0]
+ >> DISJ2_TAC
+ >> rw [Abbr ‘s'’, Once EXTENSION]
+ >> reverse EQ_TAC
+ >- (rw [] \\
+     Q.EXISTS_TAC ‘[h]’ \\
+     simp [Abbr ‘f’] \\
+     Suff ‘subterm X M [h] r = NONE’ >- simp [] \\
+     rw [subterm_def] \\
+     qabbrev_tac ‘n = LAMl_size M0’ \\
+     Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’ \\
+    ‘DISJOINT (set vs) (FV M0)’ by PROVE_TAC [subterm_disjoint_lemma'] \\
+     qabbrev_tac ‘M1 = principal_hnf (M0 @* MAP VAR vs)’ \\
+     Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y :string”, “args :term list”)) ‘M1’ \\
+    ‘TAKE n vs = vs’ by rw [] \\
+     POP_ASSUM (rfs o wrap) \\
+    ‘LENGTH args = m’ by simp [Abbr ‘m’] \\
+     simp [])
+ (* stage work *)
+ >> rw [Abbr ‘f’]
+ >> Suff ‘subterm X M (h::q) r = NONE’ >- simp []
+ >> rw [subterm_def]
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> ‘DISJOINT (set vs) (FV M0)’ by PROVE_TAC [subterm_disjoint_lemma']
+ >> qabbrev_tac ‘M1 = principal_hnf (M0 @* MAP VAR vs)’
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y :string”, “args :term list”)) ‘M1’
+ >> ‘TAKE n vs = vs’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ >> Q.PAT_X_ASSUM ‘h < _’ MP_TAC >> simp []
+ >> ‘LENGTH args = m’ by simp [Abbr ‘m’]
+ >> simp []
+QED
+
 Theorem solvable_subst_permutator :
     !X M r P v d.
        FINITE X /\ FV M SUBSET X UNION RANK r /\
