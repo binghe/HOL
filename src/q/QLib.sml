@@ -1,7 +1,7 @@
 structure QLib :> QLib =
 struct
 
-  open Abbrev boolLib Tactical
+  open Abbrev boolLib
   val qx_gen_tac : term quotation -> tactic = Q.X_GEN_TAC
   val qx_genl_tac = MAP_EVERY qx_gen_tac
   val qx_choose_then = Q.X_CHOOSE_THEN
@@ -45,7 +45,7 @@ struct
   fun qx_choosel_then [] ttac = ttac
     | qx_choosel_then (q::qs) ttac = qx_choose_then q (qx_choosel_then qs ttac)
 
-  fun qid_specl_tac []     = ALL_TAC
+  fun qid_specl_tac []     = Tactical.ALL_TAC
     | qid_specl_tac (h::t) = qid_specl_tac t >> qid_spec_tac h;
 
 end;

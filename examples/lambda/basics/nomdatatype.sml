@@ -674,7 +674,7 @@ fun filter_this_next e l acc =
 fun build_tns ptys tynames = let
     val dv = dVartype (!bound_tyname);
     val bound_args = filter_this_next dv ptys [];
-    val indexes = map (fn e => index_of (pretypeToName e) tynames) bound_args;
+    val indexes = map (fn e => index_of (pretypeToName e) tynames) bound_args
 in
     mk_eq (“tns :num list”, mk_list (indexes, numSyntax.num))
 end;
