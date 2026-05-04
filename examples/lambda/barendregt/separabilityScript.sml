@@ -1,6 +1,8 @@
 (* ========================================================================== *)
 (* FILE    : separabilityScript.sml                                           *)
 (* TITLE   : Separability of lambda terms (additional work) [1, Chapter 10.4] *)
+(*                                                                            *)
+(* AUTHOR  : Chun Tian (binghe) <binghe.lisp@gmail.com> (2026)                *)
 (* ========================================================================== *)
 
 Theory separability
@@ -971,7 +973,7 @@ QED
 Theorem vsubterm_width_var[simp] :
     vsubterm_width (VAR y) p = SUC (MAX_LIST p)
 Proof
-    rw [vsubterm_width_def, subterm_width_var]
+    RW_TAC std_ss [vsubterm_width_def, subterm_width_var]
 QED
 
 (* NOTE: “~(h < m)” is assumed here. *)
