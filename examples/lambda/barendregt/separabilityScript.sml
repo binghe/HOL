@@ -2197,6 +2197,102 @@ Proof
  >> qexistsl_tac [‘X’, ‘r’, ‘M0’, ‘n’, ‘vs’, ‘M1’] >> simp []
 QED
 
+(*---------------------------------------------------------------------------*
+ *  Boehm construction for vsubterm-based "Boehm out" technique
+ *---------------------------------------------------------------------------*)
+
+(* NOTE: This version uses ‘vsubterm_width’ instead of ‘subterm_width’. *)
+Definition Boehm_construction' :
+    Boehm_construction' X (Ms :term list) p =
+    let n_max = MAX_LIST (MAP (\e. subterm_length e p) Ms);
+        d_max = MAX_LIST (MAP (\e. vsubterm_width e p) Ms) + n_max;
+        k     = LENGTH Ms;
+        X'    = BIGUNION (IMAGE FV (set Ms));
+        vs0   = NEWS (n_max + SUC d_max + k) (X UNION X');
+        vs    = TAKE n_max vs0;
+        xs    = DROP n_max vs0;
+        M0 i  = principal_hnf (EL i Ms);
+        M1 i  = principal_hnf (M0 i @* MAP VAR vs);
+        y  i  = hnf_headvar (M1 i);
+        P  i  = permutator (d_max + i);
+        p1    = MAP rightctxt (REVERSE (MAP VAR vs));
+        p2    = REVERSE (GENLIST (\i. [P i/y i]) k);
+        p3    = MAP rightctxt (REVERSE (MAP VAR xs))
+    in
+        p3 ++ p2 ++ p1
+End
+
+Theorem Boehm_construction_transform' :
+    !X Ms p. Boehm_transform (Boehm_construction' X Ms p)
+Proof
+    RW_TAC std_ss [Boehm_construction']
+ >> MATCH_MP_TAC Boehm_transform_APPEND
+ >> reverse CONJ_TAC
+ >- rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
+ >> MATCH_MP_TAC Boehm_transform_APPEND
+ >> CONJ_TAC
+ >- rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
+ >> rw [Boehm_transform_def, Abbr ‘p2’, EVERY_GENLIST]
+QED
+
+Theorem FV_apply_Boehm_construction' :
+    !X Ms p r.
+       FINITE X /\ p <> [] /\ 0 < r /\ Ms <> [] /\
+       BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r ==>
+       !M. MEM M Ms ==>
+           FV (apply (Boehm_construction' X Ms p) M) SUBSET X UNION RANK r
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘N’
+ >> DISCH_TAC
+ >> UNBETA_TAC [Boehm_construction'] “Boehm_construction' X Ms p”
+ >> qunabbrev_tac ‘X'’
+ >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set Ms))’
+ >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> rw [])
+ >> simp [Boehm_apply_APPEND]
+ (* eliminate p3 *)
+ >> simp [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
+ >> reverse CONJ_TAC
+ >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘set vs0’ \\
+     rw [Abbr ‘xs’, LIST_TO_SET_DROP] \\
+     Suff ‘set vs0 SUBSET RANK r’ >- SET_TAC [] \\
+     Q_TAC (TRANS_TAC SUBSET_TRANS) ‘ROW 0’ >> rw [ROW_SUBSET_RANK] \\
+     qunabbrev_tac ‘vs0’ \\
+     MATCH_MP_TAC RNEWS_SUBSET_ROW >> rw [])
+ (* eliminate p2 *)
+ >> qabbrev_tac ‘sub = \k. GENLIST (\i. (P i,y i)) k’
+ >> Know ‘!t. apply p2 t = t ISUB sub k’
+ >- (simp [Abbr ‘p2’, Abbr ‘sub’] \\
+     Q.SPEC_TAC (‘k’, ‘j’) \\
+     Induct_on ‘j’ >- rw [] \\
+     rw [GENLIST, REVERSE_SNOC, ISUB_SNOC])
+ >> DISCH_TAC
+ >> simp []
+ >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV (apply p1 N) UNION FVS (sub k)’
+ >> CONJ_TAC >- rw [FV_ISUB_upperbound]
+ >> Know ‘!j. DOM (sub j) = IMAGE y (count j) /\ FVS (sub j) = {}’
+ >- (simp [Abbr ‘sub’] \\
+     Induct_on ‘j’ >- rw [DOM_DEF, FVS_DEF] \\
+     rw [GENLIST, REVERSE_SNOC, DOM_DEF, FVS_DEF, COUNT_SUC, DOM_SNOC, FVS_SNOC]
+     >- SET_TAC [] \\
+     rw [Abbr ‘P’, FV_permutator])
+ >> DISCH_TAC
+ >> simp []
+ (* eliminate p1 *)
+ >> simp [Abbr ‘p1’, Boehm_apply_MAP_rightctxt']
+ >> reverse CONJ_TAC
+ >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘set vs0’ \\
+     rw [Abbr ‘vs’, LIST_TO_SET_TAKE] \\
+     Suff ‘set vs0 SUBSET RANK r’ >- SET_TAC [] \\
+     Q_TAC (TRANS_TAC SUBSET_TRANS) ‘ROW 0’ >> rw [ROW_SUBSET_RANK] \\
+     qunabbrev_tac ‘vs0’ \\
+     MATCH_MP_TAC RNEWS_SUBSET_ROW >> rw [])
+ >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘Y’ >> art []
+ >> rw [Abbr ‘Y’, SUBSET_DEF]
+ >> Q.EXISTS_TAC ‘FV N’ >> art []
+ >> Q.EXISTS_TAC ‘N’ >> art []
+QED
+
 (* END *)
 val _ = html_theory "separability";
 
