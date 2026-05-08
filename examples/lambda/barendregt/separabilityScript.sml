@@ -39,6 +39,8 @@ Overload VAR = “term$VAR”
 
 val _ = temp_clear_overloads_on "fEL"; (* use old EL syntax *)
 
+val PRINT_TAC = goalStack.note_tac;
+
 (*---------------------------------------------------------------------------*
  *  Virtual subterm (vsubterm) of Boehm Trees
  *---------------------------------------------------------------------------*)
@@ -974,6 +976,16 @@ Theorem vsubterm_width_var[simp] :
     vsubterm_width (VAR y) p = SUC (MAX_LIST p)
 Proof
     RW_TAC std_ss [vsubterm_width_def, subterm_width_var]
+QED
+
+Theorem vsubterm_width_first :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\ solvable M
+          ==> hnf_children_size (principal_hnf M) <= vsubterm_width M p
+Proof
+    rpt STRIP_TAC
+ >> Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width M p’ >> simp []
+ >> MATCH_MP_TAC subterm_width_first
+ >> qexistsl_tac [‘X’, ‘r’] >> art []
 QED
 
 (* NOTE: “~(h < m)” is assumed here. *)
@@ -2302,11 +2314,12 @@ QED
  *)
 Theorem vsubterm_equivalent_lemma :
     !X Ms p r pi.
-           FINITE X /\ p <> [] /\ 0 < r /\ Ms <> [] /\
+           FINITE X /\ p <> [] /\ 0 < r /\
            BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r /\
-           pi = Boehm_construction' X Ms p
+           pi = Boehm_construction' X Ms p /\
+           EVERY solvable Ms
           ==>
-          (!M. MEM M Ms ==> is_ready (apply pi M)) /\
+          (!M. MEM M Ms ==> is_ready' (apply pi M)) /\
           (!q M. MEM M Ms /\ q <<= p /\
                  vsubterm X M q r <> NONE ==>
                  subterm X (apply pi M) q r <> NONE /\
@@ -2324,14 +2337,14 @@ Theorem vsubterm_equivalent_lemma :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  (* re-create pi' as abbreviation *)
- >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘pi = _’ (REWRITE_TAC o wrap)
  >> qabbrev_tac ‘pi' = Boehm_construction' X Ms p’
  >> ‘Boehm_transform pi'’ by PROVE_TAC [Boehm_construction_transform']
  (* define Y as the set of all FVs from all Ms *)
  >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set Ms))’
  >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> simp [])
- >> cheat
- (* TODO
+ >> Cases_on ‘Ms = []’ >- simp []
+ >> Q.PAT_X_ASSUM ‘EVERY _ Ms’ (STRIP_ASSUME_TAC o (REWRITE_RULE [EVERY_EL]))
  >> qabbrev_tac ‘k = LENGTH Ms’
  >> qabbrev_tac ‘M = \i. EL i Ms’ >> fs []
  >> Know ‘!i. i < k ==> FV (M i) SUBSET X UNION RANK r’
@@ -2341,26 +2354,11 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘M i’ >> art [] \\
      rw [Abbr ‘M’, EL_MEM])
  >> DISCH_TAC
- (* now derive some non-trivial assumptions *)
- >> ‘(!i q. i < k /\ q <<= p ==> subterm X (M i) q r <> NONE) /\
-     (!i q. i < k /\ q <<= FRONT p ==> solvable (subterm' X (M i) q r))’
-       by METIS_TAC [subterm_solvable_lemma]
- (* In the original antecedents of this theorem, some M may be unsolvable,
-    and that's the easy case.
-  *)
- >> Know ‘!i. i < k ==> solvable (M i)’
- >- (rpt STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!i q. i < k /\ q <<= FRONT p ==> solvable _’
-       (MP_TAC o Q.SPECL [‘i’, ‘[]’]) >> simp [])
- >> DISCH_TAC
- >> ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
-      by METIS_TAC [BT_ltree_paths_thm]
  (* define M0 *)
  >> qabbrev_tac ‘M0 = \i. principal_hnf (M i)’
  >> Know ‘!i. i < k ==> hnf (M0 i)’
  >- (rw [Abbr ‘M0’] \\
-     MATCH_MP_TAC hnf_principal_hnf \\
-     rw [GSYM solvable_iff_has_hnf] >> fs [EVERY_EL])
+     MATCH_MP_TAC hnf_principal_hnf' >> simp [])
  >> DISCH_TAC
  >> qabbrev_tac ‘n = \i. LAMl_size (M0 i)’
  (* NOTE: This n_max was redefined from previous ‘MAX_SET (IMAGE n (count k))’ *)
@@ -2376,8 +2374,8 @@ Proof
      MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘r’] subterm_length_first) \\
      simp [Abbr ‘n’])
  >> DISCH_TAC
- >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
- >> Know ‘!i. i < k ==> subterm_width (M i) p <= d’
+ >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. vsubterm_width e p) Ms)’
+ >> Know ‘!i. i < k ==> vsubterm_width (M i) p <= d’
  >- (rw [Abbr ‘d’] \\
      MATCH_MP_TAC MAX_LIST_PROPERTY >> rw [MEM_MAP] \\
      Q.EXISTS_TAC ‘M i’ >> rw [EL_MEM, Abbr ‘M’])
@@ -2433,27 +2431,25 @@ Proof
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
  (* decompose M0 by hnf_cases_shared *)
  >> Know ‘!i. i < k ==> ?y args. M0 i = LAMl (TAKE (n i) vs) (VAR y @* args)’
- >- (Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+ >- (Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
      fs [Abbr ‘n’] \\
      irule (iffLR hnf_cases_shared) >> simp [] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘FV (EL i Ms)’ \\
      reverse CONJ_TAC
-     >- (rw [Abbr ‘M0’] >> MATCH_MP_TAC principal_hnf_FV_SUBSET \\
-         rw [GSYM solvable_iff_has_hnf]) \\
+     >- (rw [Abbr ‘M0’] >> MATCH_MP_TAC principal_hnf_FV_SUBSET' >> simp []) \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) Y’ MP_TAC \\
      rw [Abbr ‘Y’] \\
      POP_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘M i’ >> rw [Abbr ‘M’, EL_MEM])
  (* now assert two functions y and args for each term in Ms *)
  >> simp [EXT_SKOLEM_THM'] (* from topologyTheory *)
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’
-                 (Q.X_CHOOSE_THEN ‘args’ STRIP_ASSUME_TAC))
+ >> DISCH_THEN (qx_choosel_then [‘y’, ‘args’] STRIP_ASSUME_TAC)
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> hnf (M0 i)’ K_TAC
  (* define M1 *)
  >> qabbrev_tac ‘M1 = \i. principal_hnf (M0 i @* MAP VAR vs)’
  >> Know ‘!i. i < k ==> M1 i = VAR (y i) @* args i @* DROP (n i) (MAP VAR vs)’
- >- (Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+ >- (Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
      simp [Abbr ‘M1’] \\
      qabbrev_tac ‘t = VAR (y i) @* args i’ \\
      simp [GSYM MAP_DROP] \\
@@ -2480,8 +2476,8 @@ Proof
  >> qabbrev_tac ‘m = \i. LENGTH (args i)’
  >> Know ‘!i. i < k ==> m i <= d’
  >- (RW_TAC std_ss [] \\
-     Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width (M i) p’ \\
-     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘r’] subterm_width_first) \\
+     Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘vsubterm_width (M i) p’ \\
+     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘r’] vsubterm_width_first) \\
      simp [Abbr ‘m’])
  >> DISCH_TAC
  (* NOTE: Thus P(d) is not enough to cover M1, whose ‘hnf_children_size’ is
@@ -2524,7 +2520,7 @@ Proof
      simp [DOM_SNOC, ISUB_SNOC, IN_UNION] \\
      Cases_on ‘y x IN DOM (sub i)’
      >- (Q.PAT_X_ASSUM ‘!t. i <= k /\ t IN DOM (sub i) ==> _’
-            (MP_TAC o Q.SPEC ‘y (x :num)’) >> rw [] \\
+           (MP_TAC o Q.SPEC ‘y (x :num)’) >> rw [] \\
          MATCH_MP_TAC lemma14b >> simp [Abbr ‘P’, FV_permutator]) \\
      Know ‘VAR (y x) ISUB sub i = VAR (y x)’
      >- (MATCH_MP_TAC ISUB_unchanged \\
@@ -2587,7 +2583,7 @@ Proof
  (* additional steps for explicit construction *)
  >> Q.PAT_X_ASSUM ‘Boehm_transform pi'’ MP_TAC
  >> Know ‘pi' = p3 ++ p2 ++ p1’
- >- (rw [Abbr ‘pi'’, Boehm_construction_def] \\
+ >- (rw [Abbr ‘pi'’, Boehm_construction'] \\
      simp [Abbr ‘p2’, LIST_EQ_REWRITE])
  >> Rewr'
  (* “Boehm_construction” is now eliminated, back to old steps *)
@@ -2955,8 +2951,9 @@ Proof
  >> PRINT_TAC "stage work on subtree_equiv_lemma"
  >> CONJ_TAC (* EVERY is_ready ... *)
  >- (rpt (Q.PAT_X_ASSUM ‘Boehm_transform _’ K_TAC) \\
-     simp [EVERY_EL, EL_MAP] \\
-     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     simp [MEM_EL, EL_MAP] \\
+     Q.X_GEN_TAC ‘M'’ \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) >> POP_ORW \\
   (* now expanding ‘is_ready’ using [is_ready_alt] *)
      ASM_SIMP_TAC std_ss [is_ready_alt'] \\
      qexistsl_tac [‘b i’, ‘Ns i ++ tl i’] \\
@@ -3124,6 +3121,8 @@ Proof
  (* This subgoal was due to modifications of agree_upto_def. It's still kept
     in case this extra subgoal may be later needed.
   *)
+ >> cheat
+ (* TODO
  >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (apply pi (M i)) r)’
  >- (rpt STRIP_TAC \\
      simp [BT_def, BT_generator_def, Once ltree_unfold,
@@ -6537,6 +6536,105 @@ Proof
  >> Q.PAT_X_ASSUM ‘_ = m4’ (REWRITE_TAC o wrap o SYM)
  >> simp [Abbr ‘d_max'’]
  *)
+QED
+
+(* NOTE: “EVERY solvable Ms” is removed. “is_ready'” becomes “is_ready” *)
+Theorem vsubterm_equivalent_lemma' :
+    !X Ms p r.
+           FINITE X /\ p <> [] /\ 0 < r /\
+           BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r ==>
+      ?pi. Boehm_transform pi /\
+          (!M. MEM M Ms ==> is_ready (apply pi M)) /\
+          (!q M. MEM M Ms /\ q <<= p /\
+                 vsubterm X M q r <> NONE ==>
+                 subterm X (apply pi M) q r <> NONE /\
+                (solvable (vsubterm' X M q r) <=>
+                 solvable (subterm' X (apply pi M) q r))) /\
+           !q M N. MEM M Ms /\ MEM N Ms /\ q <<= p /\
+                   vsubterm X M q r <> NONE /\
+                   vsubterm X N q r <> NONE ==>
+                   subterm X (apply pi M) q r <> NONE /\
+                   subterm X (apply pi N) q r <> NONE /\
+                  (equivalent (vsubterm' X M q r)
+                              (vsubterm' X N q r) <=>
+                   equivalent (subterm' X (apply pi M) q r)
+                              (subterm' X (apply pi N) q r))
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘EVERY unsolvable Ms’
+ >- (Q.EXISTS_TAC ‘[]’ >> simp [] \\
+     POP_ASSUM (STRIP_ASSUME_TAC o SRULE [EVERY_MEM]) \\
+     CONJ_TAC >- simp [is_ready_def] \\
+     CONJ_TAC
+     >- (rpt GEN_TAC >> STRIP_TAC \\
+         Cases_on ‘q = []’ >> simp [] \\
+         Q.PAT_X_ASSUM ‘vsubterm X M q r <> NONE’ MP_TAC \\
+         simp [vsubterm_of_unsolvables]) \\
+     rpt GEN_TAC >> STRIP_TAC \\
+     Cases_on ‘q = []’ >> simp [] \\
+     Q.PAT_X_ASSUM ‘vsubterm X M q r <> NONE’ MP_TAC \\
+     simp [vsubterm_of_unsolvables])
+ (* applying solvable_apply_imp *)
+ >> fs [EVERY_MEM, o_DEF]
+ >> qabbrev_tac ‘Ms' = FILTER solvable Ms’
+ >> ‘set Ms' SUBSET set Ms’ by simp [SUBSET_DEF, Abbr ‘Ms'’, MEM_FILTER]
+ >> ‘EVERY solvable Ms'’ by rw [Abbr ‘Ms'’, EVERY_MEM, MEM_FILTER]
+ >> Know ‘BIGUNION (IMAGE FV (set Ms')) SUBSET X UNION RANK r’
+ >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘BIGUNION (IMAGE FV (set Ms))’ >> art [] \\
+     rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+     rename1 ‘x IN FV M’ \\
+     Q.EXISTS_TAC ‘M’ >> art [] \\
+     Q.PAT_X_ASSUM ‘MEM M Ms'’ MP_TAC \\
+     rw [Abbr ‘Ms'’, MEM_FILTER])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘pi' = Boehm_construction' X Ms' p’
+ >> MP_TAC (Q.SPECL [‘X’, ‘Ms'’, ‘p’, ‘r’, ‘pi'’] vsubterm_equivalent_lemma)
+ >> rw []
+ >> Q.EXISTS_TAC ‘pi'’
+ >> CONJ_ASM1_TAC >- simp [Abbr ‘pi'’, Boehm_construction_transform']
+ >> CONJ_TAC
+ >- (rpt STRIP_TAC \\
+     reverse (Cases_on ‘solvable M’)
+     >- (‘unsolvable (apply pi' M)’ by simp [unsolvable_apply] \\
+         simp [is_ready_def]) \\
+    ‘MEM M Ms'’ by simp [Abbr ‘Ms'’, MEM_FILTER] \\
+     Q.PAT_X_ASSUM ‘!M. MEM M Ms' ==> is_ready' (apply pi' M)’
+       (MP_TAC o Q.SPEC ‘M’) >> rw [is_ready'])
+ >> CONJ_TAC
+ >- (rpt GEN_TAC >> STRIP_TAC \\
+     reverse (Cases_on ‘solvable M’)
+     >- (‘unsolvable (apply pi' M)’ by simp [unsolvable_apply] \\
+         Cases_on ‘q = []’ >> simp [] \\
+         Q.PAT_X_ASSUM ‘vsubterm X M q r <> NONE’ MP_TAC \\
+         simp [vsubterm_of_unsolvables]) \\
+    ‘MEM M Ms'’ by simp [Abbr ‘Ms'’, MEM_FILTER] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ (* stage work *)
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- (‘unsolvable (apply pi' M)’ by simp [unsolvable_apply] \\
+     Cases_on ‘q = []’ >> simp []
+     >- (simp [equivalent_def] \\
+         Cases_on ‘solvable N’ >> simp [unsolvable_apply] \\
+        ‘MEM N Ms'’ by simp [Abbr ‘Ms'’, MEM_FILTER] \\
+         Q.PAT_X_ASSUM ‘!q M. MEM M Ms' /\ _ ==> _’
+           (MP_TAC o Q.SPECL [‘[]’, ‘N’]) >> simp []) \\
+     Q.PAT_X_ASSUM ‘vsubterm X M q r <> NONE’ MP_TAC \\
+     simp [vsubterm_of_unsolvables])
+ >> reverse (Cases_on ‘solvable N’)
+ >- (‘unsolvable (apply pi' N)’ by simp [unsolvable_apply] \\
+     Cases_on ‘q = []’ >> simp []
+     >- (simp [equivalent_def] \\
+         reverse (Cases_on ‘solvable M’) >> simp [unsolvable_apply]
+         >- PROVE_TAC [] \\
+        ‘MEM M Ms'’ by simp [Abbr ‘Ms'’, MEM_FILTER] \\
+         Q.PAT_X_ASSUM ‘!q M. MEM M Ms' /\ _ ==> _’
+           (MP_TAC o Q.SPECL [‘[]’, ‘M’]) >> simp []) \\
+     Q.PAT_X_ASSUM ‘vsubterm X N q r <> NONE’ MP_TAC \\
+     simp [vsubterm_of_unsolvables])
+ (* stage work *)
+ >> ‘MEM M Ms' /\ MEM N Ms'’ by simp [Abbr ‘Ms'’, MEM_FILTER]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
 (* END *)
