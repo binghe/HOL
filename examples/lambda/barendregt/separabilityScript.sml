@@ -6555,10 +6555,9 @@ Theorem vsubterm_equivalent_lemma' :
                    vsubterm X N q r <> NONE ==>
                    subterm X (apply pi M) q r <> NONE /\
                    subterm X (apply pi N) q r <> NONE /\
-                  (equivalent (vsubterm' X M q r)
-                              (vsubterm' X N q r) <=>
-                   equivalent (subterm' X (apply pi M) q r)
-                              (subterm' X (apply pi N) q r))
+                  (vsubterm' X M q r =~ vsubterm' X N q r <=>
+                   subterm' X (apply pi M) q r =~
+                   subterm' X (apply pi N) q r)
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘EVERY unsolvable Ms’
