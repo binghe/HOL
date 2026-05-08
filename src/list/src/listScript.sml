@@ -1671,6 +1671,12 @@ QED
 
 Theorem EVERY_MONOTONIC = MONO_EVERY
 
+Theorem EVERY_SUBLIST :
+    !l1 l P. set l1 SUBSET set l /\ EVERY P l ==> EVERY P l1
+Proof
+    rw [SUBSET_DEF, EVERY_MEM]
+QED
+
 (* ----------------------------------------------------------------------
    ZIP and UNZIP functions (taken from rich_listTheory)
    ---------------------------------------------------------------------- *)
