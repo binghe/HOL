@@ -2322,19 +2322,22 @@ Theorem vsubterm_equivalent_lemma :
           (!M. MEM M Ms ==> is_ready' (apply pi M)) /\
           (!q M. MEM M Ms /\ q <<= p /\
                  vsubterm X M q r <> NONE ==>
-                 subterm X (apply pi M) q r <> NONE /\
+                 vsubterm X (apply pi M) q r <> NONE /\
                 (solvable (vsubterm' X M q r) <=>
-                 solvable (subterm' X (apply pi M) q r))) /\
+                 solvable (vsubterm' X (apply pi M) q r))) /\
            !q M N. MEM M Ms /\ MEM N Ms /\ q <<= p /\
                    vsubterm X M q r <> NONE /\
                    vsubterm X N q r <> NONE ==>
-                   subterm X (apply pi M) q r <> NONE /\
-                   subterm X (apply pi N) q r <> NONE /\
+                   vsubterm X (apply pi M) q r <> NONE /\
+                   vsubterm X (apply pi N) q r <> NONE /\
                   (equivalent (vsubterm' X M q r)
                               (vsubterm' X N q r) <=>
-                   equivalent (subterm' X (apply pi M) q r)
-                              (subterm' X (apply pi N) q r))
+                   equivalent (vsubterm' X (apply pi M) q r)
+                              (vsubterm' X (apply pi N) q r))
 Proof
+    cheat
+QED
+(*
     rpt GEN_TAC >> STRIP_TAC
  (* re-create pi' as abbreviation *)
  >> Q.PAT_X_ASSUM ‘pi = _’ (REWRITE_TAC o wrap)
@@ -2371,14 +2374,20 @@ Proof
  >> Know ‘!i. i < k ==> n i <= n_max’
  >- (RW_TAC std_ss [] \\
      Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_length (M i) p’ \\
-     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘r’] subterm_length_first) \\
-     simp [Abbr ‘n’])
+     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘r’]
+                     subterm_length_first) >> simp [Abbr ‘n’])
  >> DISCH_TAC
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. vsubterm_width e p) Ms)’
  >> Know ‘!i. i < k ==> vsubterm_width (M i) p <= d’
  >- (rw [Abbr ‘d’] \\
      MATCH_MP_TAC MAX_LIST_PROPERTY >> rw [MEM_MAP] \\
      Q.EXISTS_TAC ‘M i’ >> rw [EL_MEM, Abbr ‘M’])
+ >> DISCH_TAC
+ (* NOTE: This is vsubterm_width property not shared by subterm_width *)
+ >> Know ‘MAX_LIST p < d’
+ >- (‘0 < k’ by simp [Abbr ‘k’, LENGTH_NON_NIL] \\
+     Q_TAC (TRANS_TAC LTE_TRANS) ‘vsubterm_width (M 0) p’ >> simp [] \\
+     simp [vsubterm_width_def])
  >> DISCH_TAC
  >> qabbrev_tac ‘d_max = d + n_max’
  (* ‘vs0’ excludes all free variables in Ms but is in ROW 0, then is divideded
@@ -3203,29 +3212,40 @@ Proof
      qunabbrev_tac ‘ys’ \\
      MATCH_MP_TAC DISJOINT_RNEWS >> simp [])
  >> DISCH_TAC
- >> cheat
- (* TODO
+ (* stage work *)
  >> Know ‘!q. q <<= p /\ q <> [] ==>
               !i. i < k /\ vsubterm X (M i) q r <> NONE ==>
-                  subterm X (H i) q r <> NONE /\
-                  subterm' X (H i) q r =
+                  vsubterm X (H i) q r <> NONE /\
+                  vsubterm' X (H i) q r =
                  (tpm (REVERSE pm) (vsubterm' X (M i) q r)) ISUB ss’
  >- (Q.X_GEN_TAC ‘q’ >> STRIP_TAC \\
      Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
      POP_ASSUM MP_TAC \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> vsubterm_width (M i) p <= d’ drule \\
-     Cases_on ‘p’ >> fs [] \\
-     Cases_on ‘q’ >> fs [] \\
-     Q.PAT_X_ASSUM ‘h' = h’ (fs o wrap) >> T_TAC \\
-     simp [subterm_of_solvables, vsubterm_of_solvables] \\
+     Q.PAT_X_ASSUM ‘p <> []’ MP_TAC \\
+     Cases_on ‘p’ >> simp [] \\
+     Q.PAT_X_ASSUM ‘q <> []’ MP_TAC \\
+     Cases_on ‘q’ >> simp [] \\
+     Q.PAT_X_ASSUM ‘_ <<= h::t’ MP_TAC >> simp [] >> STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘_ = h’ K_TAC \\
+     simp [subterm_of_solvables] \\
      Know ‘principal_hnf (H i) = H i’
      >- (MATCH_MP_TAC principal_hnf_reduce \\
          simp [Abbr ‘H’, GSYM appstar_APPEND, hnf_appstar]) >> DISCH_TAC \\
     ‘LAMl_size (H i) = 0’
        by rw [Abbr ‘H’, LAMl_size_appstar, GSYM appstar_APPEND] \\
      simp [] \\
-     NTAC 2 (POP_ASSUM K_TAC) (* principal_hnf (H i), LAMl_size (H i) *) \\
+     Know ‘h < d’
+     >- (Q.PAT_X_ASSUM ‘MAX_LIST (h::t) < d’ MP_TAC \\
+         simp [MAX_LIST_CONS]) >> DISCH_TAC \\
+     Know ‘h < LENGTH (hnf_children (H i))’
+     >- (Q_TAC (TRANS_TAC LTE_TRANS) ‘d’ >> art [] \\
+         simp [Abbr ‘H’, GSYM appstar_APPEND] \\
+         simp [Abbr ‘Ns’] \\
+         Suff ‘d <= d_max' i’ >- simp [] \\
+         simp [Abbr ‘d_max'’, Abbr ‘d_max’]) >> Rewr \\
      DISCH_TAC (* subterm_width (M i) (h::t) <= d *) \\
+     simp [vsubterm_of_solvables] \\
      Q_TAC (RNEWS_TAC (“ys' :string list”, “r :num”, “(n :num -> num) i”)) ‘X’ \\
      qabbrev_tac ‘vs' = TAKE (n i) vs’ \\
     ‘ALL_DISTINCT vs' /\ LENGTH vs' = n i’
@@ -3263,24 +3283,20 @@ Proof
          Q_TAC (TRANS_TAC SUBSET_TRANS) ‘Z’ >> art [] \\
          rw [Abbr ‘t0’, FV_appstar]) >> Rewr' \\
      simp [Abbr ‘t0’, tpm_appstar, hnf_children_appstar] \\
-
-
-   (* TODO *)
-     cheat \\
-
-
-     Cases_on ‘h < m i’ >> simp [] \\
-     Know ‘h < d_max’
-     >- (Q_TAC (TRANS_TAC LESS_LESS_EQ_TRANS) ‘m i’ >> art [] \\
-         Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘d’ >> simp [] \\
-         simp [Abbr ‘d_max’]) >> DISCH_TAC \\
-    ‘h < d_max' i’ by rw [Abbr ‘d_max'’] \\
-     Know ‘h < LENGTH (hnf_children (H i))’
-     >- (Q_TAC (TRANS_TAC LESS_LESS_EQ_TRANS) ‘d_max’ \\
-         simp []) >> Rewr \\
      Know ‘EL h (hnf_children (H i)) = EL h (Ns i)’
      >- (simp [Abbr ‘H’, GSYM appstar_APPEND] \\
-         MATCH_MP_TAC EL_APPEND1 >> simp [Abbr ‘Ns’]) >> Rewr' \\
+         MATCH_MP_TAC EL_APPEND1 \\
+         Q_TAC (TRANS_TAC LTE_TRANS) ‘d’ >> art [] \\
+         simp [Abbr ‘Ns’] \\
+         simp [Abbr ‘d_max'’, Abbr ‘d_max’]) >> Rewr' \\
+     Know ‘h < d_max’
+     >- (Q_TAC (TRANS_TAC LTE_TRANS) ‘d’ >> art [] \\
+         simp [Abbr ‘d_max’]) >> DISCH_TAC \\
+    ‘h < d_max' i’ by rw [Abbr ‘d_max'’] \\
+  (* stage work *)
+     reverse (Cases_on ‘h < m i’) >> simp []
+     >- (
+         cheat) \\
      Know ‘EL h (Ns i) = EL h (args' i)’
      >- (simp [Abbr ‘Ns’] \\
          Know ‘EL h (TAKE (d_max' i) (l i)) = EL h (l i)’
@@ -6334,7 +6350,6 @@ Proof
  >> Q.PAT_X_ASSUM ‘_ = m4’ (REWRITE_TAC o wrap o SYM)
  >> simp [Abbr ‘d_max'’]
  *)
-QED
 
 (* NOTE: “EVERY solvable Ms” is removed. “is_ready'” becomes “is_ready” *)
 Theorem vsubterm_equivalent_lemma' :
@@ -6345,32 +6360,24 @@ Theorem vsubterm_equivalent_lemma' :
           (!M. MEM M Ms ==> is_ready (apply pi M)) /\
           (!q M. MEM M Ms /\ q <<= p /\
                  vsubterm X M q r <> NONE ==>
-                 subterm X (apply pi M) q r <> NONE /\
+                 vsubterm X (apply pi M) q r <> NONE /\
                 (solvable (vsubterm' X M q r) <=>
-                 solvable (subterm' X (apply pi M) q r))) /\
+                 solvable (vsubterm' X (apply pi M) q r))) /\
            !q M N. MEM M Ms /\ MEM N Ms /\ q <<= p /\
                    vsubterm X M q r <> NONE /\
                    vsubterm X N q r <> NONE ==>
-                   subterm X (apply pi M) q r <> NONE /\
-                   subterm X (apply pi N) q r <> NONE /\
-                  (vsubterm' X M q r =~ vsubterm' X N q r <=>
-                   subterm' X (apply pi M) q r =~
-                   subterm' X (apply pi N) q r)
+                   vsubterm X (apply pi M) q r <> NONE /\
+                   vsubterm X (apply pi N) q r <> NONE /\
+                  (equivalent (vsubterm' X M q r)
+                              (vsubterm' X N q r) <=>
+                   equivalent (vsubterm' X (apply pi M) q r)
+                              (vsubterm' X (apply pi N) q r))
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘EVERY unsolvable Ms’
  >- (Q.EXISTS_TAC ‘[]’ >> simp [] \\
      POP_ASSUM (STRIP_ASSUME_TAC o SRULE [EVERY_MEM]) \\
-     CONJ_TAC >- simp [is_ready_def] \\
-     CONJ_TAC
-     >- (rpt GEN_TAC >> STRIP_TAC \\
-         Cases_on ‘q = []’ >> simp [] \\
-         Q.PAT_X_ASSUM ‘vsubterm X M q r <> NONE’ MP_TAC \\
-         simp [vsubterm_of_unsolvables]) \\
-     rpt GEN_TAC >> STRIP_TAC \\
-     Cases_on ‘q = []’ >> simp [] \\
-     Q.PAT_X_ASSUM ‘vsubterm X M q r <> NONE’ MP_TAC \\
-     simp [vsubterm_of_unsolvables])
+     simp [is_ready_def])
  (* applying solvable_apply_imp *)
  >> fs [o_DEF, SF ETA_ss]
  >> qabbrev_tac ‘Ms' = FILTER solvable Ms’
