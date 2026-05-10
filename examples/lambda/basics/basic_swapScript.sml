@@ -480,4 +480,17 @@ Proof
  >> simp [Abbr ‘vs’, DISJOINT_RNEWS_RANK']
 QED
 
+Theorem RNEW_EL_RNEWS :
+    !r n n' X. FINITE X /\ n < n' ==> RNEW r n X = EL n (RNEWS r n' X)
+Proof
+    RW_TAC std_ss [RNEW_def]
+ >> qabbrev_tac ‘vs = RNEWS r (SUC n) X’
+ >> MP_TAC (Q.SPECL [‘r’, ‘SUC n’, ‘X’] RNEWS_def)
+ >> RW_TAC std_ss []
+ >> ‘vs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> simp [LAST_EL]
+ >> MP_TAC (Q.SPECL [‘r’, ‘SUC n’, ‘n'’, ‘X’] RNEWS_TAKE)
+ >> simp [EL_TAKE]
+QED
+
 val _ = html_theory "basic_swap";
