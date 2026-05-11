@@ -387,6 +387,15 @@ Proof
  >> Q.EXISTS_TAC ‘j’ >> rw []
 QED
 
+Theorem DISJOINT_ROW_RNEWS :
+    !s r1 r2 n. FINITE s /\ r1 <> r2 ==> DISJOINT (ROW r1) (set (RNEWS r2 n s))
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC DISJOINT_SUBSET
+ >> Q.EXISTS_TAC ‘ROW r2’
+ >> simp [RNEWS_SUBSET_ROW, ROW_DISJOINT]
+QED
+
 Theorem DISJOINT_RNEWS :
     !r1 r2 n1 n2 s1 s2. FINITE s1 /\ FINITE s2 /\ r1 <> r2 ==>
         DISJOINT (set (RNEWS r1 n1 s1)) (set (RNEWS r2 n2 s2))
@@ -441,6 +450,12 @@ End
 
 (* |- !r n X. RNEW r n X = n2s (r *, (SUC (string_width X) + n)) *)
 Theorem RNEW = RNEW_def |> SRULE [RNEWS, alloc_def, GENLIST_LAST, LET_DEF]
+
+Theorem RNEW_IN_ROW :
+    !r n X. RNEW r n X IN ROW r
+Proof
+    rw [RNEW, ROW_DEF]
+QED
 
 Theorem RNEW_IN_RANK :
     !r n X. FINITE X ==> RNEW r n X IN RANK (SUC r)
