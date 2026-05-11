@@ -276,6 +276,46 @@ Proof
     RW_TAC std_ss [vsubterm_var]
 QED
 
+Theorem vsubterm_permutator :
+    !X p r d. FINITE X /\ p <> [] /\ MAX_LIST p < d ==>
+              vsubterm X (permutator d) p r =
+              SOME (VAR (RNEW (r + LENGTH p - 1) (LAST p) X),r + LENGTH p)
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘p’ >> fs [MAX_LIST_def] >> T_TAC
+ >> simp [vsubterm_def, principal_hnf_reduce]
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “SUC d”)) ‘X’
+ >> MP_TAC (Q.SPECL [‘d’, ‘MAP VAR vs’] permutator_hreduce_more')
+ >> simp [EL_MAP]
+ >> Know ‘DROP (SUC d) (MAP VAR vs) = []’
+ >- (‘SUC d = LENGTH (MAP VAR vs)’ by simp [] >> POP_ORW \\
+     REWRITE_TAC [DROP_LENGTH_NIL])
+ >> Rewr'
+ >> simp []
+ >> DISCH_TAC
+ >> qabbrev_tac ‘args = TAKE d (MAP VAR vs)’
+ >> qabbrev_tac ‘y = EL d vs’
+ >> ‘LENGTH args = d’ by simp [Abbr ‘args’]
+ >> Know ‘principal_hnf (permutator d @* MAP VAR vs) = VAR y @* args’
+ >- (‘hnf (VAR y @* args)’ by simp [] \\
+     Suff ‘has_hnf (permutator d @* MAP VAR vs)’
+     >- METIS_TAC [principal_hnf_thm] \\
+     simp [has_hnf_thm] \\
+     Q.EXISTS_TAC ‘VAR y @* args’ >> art [])
+ >> Rewr'
+ >> simp []
+ >> POP_ASSUM K_TAC (* LENGTH args = d *)
+ >> simp [EL_TAKE, Abbr ‘args’, EL_MAP]
+ >> reverse (Cases_on ‘t = []’)
+ >- (simp [vsubterm_var, LAST_DEF] \\
+     Suff ‘LENGTH t + SUC r - 1 = r + SUC (LENGTH t) - 1’ >- Rewr \\
+     numLib.ARITH_TAC)
+ >> simp []
+ >> SYM_TAC
+ >> qunabbrev_tac ‘vs’
+ >> MATCH_MP_TAC RNEW_EL_RNEWS >> simp []
+QED
+
 (* NOTE: The exact value of ‘x’ is hard to describe, except for it's row/rank. *)
 Theorem vsubterm_eq_var :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
@@ -3482,8 +3522,115 @@ Proof
          >- (SIMP_TAC std_ss [Abbr ‘args2’] \\
              MATCH_MP_TAC EL_DROP >> simp []) >> Rewr' \\
          qabbrev_tac ‘n' = h - m i + n i’ \\
-        ‘LENGTH t' + SUC r - 1 = r + LENGTH t'’ by numLib.ARITH_TAC >> POP_ORW \\
-         cheat) \\
+        ‘n' < LENGTH args1’ by simp [Abbr ‘n'’] \\
+         simp [Abbr ‘args1’, EL_MAP] \\
+         POP_ASSUM K_TAC \\
+         qabbrev_tac ‘v = EL n' vs’ \\
+         reverse (Cases_on ‘v IN DOM ss’)
+         >- (Know ‘VAR v ISUB ss = VAR v’
+             >- (MATCH_MP_TAC ISUB_unchanged \\
+                 POP_ASSUM MP_TAC >> simp []) >> Rewr' \\
+             simp [vsubterm_var] \\
+            ‘LENGTH t' + SUC r - 1 = r + LENGTH t'’
+               by numLib.ARITH_TAC >> POP_ORW \\
+             qabbrev_tac ‘r' = r + LENGTH t'’ \\
+             Q.PAT_X_ASSUM ‘v NOTIN DOM ss’ K_TAC \\
+             qunabbrev_tac ‘v’ \\
+             qmatch_abbrev_tac ‘VAR v = _’ \\
+            ‘0 < LENGTH t'’ by simp [LENGTH_NON_NIL] \\
+             Know ‘VAR (lswapstr (REVERSE pm) v) = VAR v’
+             >- (REWRITE_TAC [GSYM tpm_thm] \\
+                 REWRITE_TAC [GSYM tpm_eqr, Once EQ_SYM_EQ] \\
+                 MATCH_MP_TAC tpm_unchanged \\
+                 simp [FV_thm, Abbr ‘pm’, MAP_ZIP] \\
+                ‘v IN ROW r'’ by simp [Abbr ‘v’, RNEW_IN_ROW] \\
+                ‘r' <> 0 /\ r' <> r’ by simp [Abbr ‘r'’] \\
+                 CONJ_TAC >| (* 2 subgoals *)
+                 [ (* goal 1 (of 2) *)
+                   Suff ‘DISJOINT (ROW r') (set vs0)’ >- rw [DISJOINT_ALT] \\
+                   qunabbrev_tac ‘vs0’ \\
+                   MATCH_MP_TAC DISJOINT_ROW_RNEWS >> simp [],
+                   (* goal 2 (of 2) *)
+                   Suff ‘DISJOINT (ROW r') (set vsr)’ >- rw [DISJOINT_ALT] \\
+                   qunabbrev_tac ‘vsr’ \\
+                   MATCH_MP_TAC DISJOINT_ROW_RNEWS >> simp [] ]) >> Rewr' \\
+             SYM_TAC >> MATCH_MP_TAC ISUB_unchanged >> simp [] \\
+             Q.X_GEN_TAC ‘i1’ \\
+             Cases_on ‘i1 < k’ >> simp [] \\
+             Q.PAT_X_ASSUM
+               ‘!i. i < k ==> y i IN Y UNION set (TAKE (n i) vs)’ drule \\
+             REWRITE_TAC [IN_UNION] \\
+             STRIP_TAC
+             >- (Suff ‘v NOTIN Y’ >- METIS_TAC [] \\
+                 Suff ‘v NOTIN X UNION RANK r’ >- METIS_TAC [SUBSET_DEF] \\
+                ‘r < r'’ by simp [Abbr ‘r'’] \\
+                 Know ‘v NOTIN X UNION RANK r'’ >- simp [Abbr ‘v’, RNEW_thm] \\
+                 Suff ‘RANK r SUBSET RANK r'’ >- SET_TAC [] \\
+                 MATCH_MP_TAC RANK_MONO >> simp []) \\
+             qabbrev_tac ‘v' = y i1’ \\
+            ‘MEM v' vs’  by PROVE_TAC [MEM_TAKE] \\
+            ‘MEM v' vs0’ by METIS_TAC [MEM_TAKE] \\
+            ‘v IN ROW r'’ by simp [Abbr ‘v’, Abbr ‘r'’, RNEW_IN_ROW] \\
+             Suff ‘DISJOINT (ROW r') (set vs0)’ >- METIS_TAC [DISJOINT_ALT] \\
+             qunabbrev_tac ‘vs0’ \\
+             MATCH_MP_TAC DISJOINT_ROW_RNEWS >> simp [Abbr ‘r'’]) \\
+         POP_ASSUM MP_TAC >> simp [] \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘i1’ STRIP_ASSUME_TAC) \\
+         Q.PAT_X_ASSUM ‘v = y i1’ (REWRITE_TAC o wrap) \\
+         simp [Abbr ‘P’] \\
+      (* applying vsubterm_permutator *)
+         Q.PAT_X_ASSUM ‘MAX_LIST (h::t) < d’ MP_TAC \\
+         simp [MAX_LIST_def] >> DISCH_TAC \\
+         Know ‘MAX_LIST t' < d_max' i1’
+         >- (Q_TAC (TRANS_TAC LET_TRANS) ‘MAX_LIST t’ \\
+             CONJ_TAC >- (MATCH_MP_TAC MAX_LIST_LE_PREFIX >> art []) \\
+             Q_TAC (TRANS_TAC LTE_TRANS) ‘d’ >> art [] \\
+             simp [Abbr ‘d_max'’, Abbr ‘d_max’]) >> DISCH_TAC \\
+         simp [vsubterm_permutator] \\
+        ‘LENGTH t' + SUC r - 1 = r + LENGTH t'’
+           by numLib.ARITH_TAC >> POP_ORW \\
+         qabbrev_tac ‘r' = r + LENGTH t'’ \\
+         qunabbrevl_tac [‘v’, ‘n'’] \\
+         qmatch_abbrev_tac ‘VAR v = _’ \\
+        ‘0 < LENGTH t'’ by simp [LENGTH_NON_NIL] \\
+         Know ‘VAR (lswapstr (REVERSE pm) v) = VAR v’
+         >- (REWRITE_TAC [GSYM tpm_thm] \\
+             REWRITE_TAC [GSYM tpm_eqr, Once EQ_SYM_EQ] \\
+             MATCH_MP_TAC tpm_unchanged \\
+             simp [FV_thm, Abbr ‘pm’, MAP_ZIP] \\
+            ‘v IN ROW r'’ by simp [Abbr ‘v’, RNEW_IN_ROW] \\
+            ‘r' <> 0 /\ r' <> r’ by simp [Abbr ‘r'’] \\
+             CONJ_TAC >| (* 2 subgoals *)
+             [ (* goal 1 (of 2) *)
+               Suff ‘DISJOINT (ROW r') (set vs0)’ >- rw [DISJOINT_ALT] \\
+               qunabbrev_tac ‘vs0’ \\
+               MATCH_MP_TAC DISJOINT_ROW_RNEWS >> simp [],
+               (* goal 2 (of 2) *)
+               Suff ‘DISJOINT (ROW r') (set vsr)’ >- rw [DISJOINT_ALT] \\
+               qunabbrev_tac ‘vsr’ \\
+               MATCH_MP_TAC DISJOINT_ROW_RNEWS >> simp [] ]) >> Rewr' \\
+         SYM_TAC >> MATCH_MP_TAC ISUB_unchanged >> simp [] \\
+         Q.PAT_X_ASSUM ‘i1 < k’                  K_TAC \\
+         Q.PAT_X_ASSUM ‘MAX_LIST t' < d_max' i1’ K_TAC \\
+         Q.X_GEN_TAC ‘i1’ \\
+         Cases_on ‘i1 < k’ >> simp [] \\
+         Q.PAT_X_ASSUM
+           ‘!i. i < k ==> y i IN Y UNION set (TAKE (n i) vs)’ drule \\
+         REWRITE_TAC [IN_UNION] \\
+         STRIP_TAC
+         >- (Suff ‘v NOTIN Y’ >- METIS_TAC [] \\
+             Suff ‘v NOTIN X UNION RANK r’ >- METIS_TAC [SUBSET_DEF] \\
+            ‘r < r'’ by simp [Abbr ‘r'’] \\
+             Know ‘v NOTIN X UNION RANK r'’ >- simp [Abbr ‘v’, RNEW_thm] \\
+             Suff ‘RANK r SUBSET RANK r'’ >- SET_TAC [] \\
+             MATCH_MP_TAC RANK_MONO >> simp []) \\
+         qabbrev_tac ‘v' = y i1’ \\
+        ‘MEM v' vs’  by PROVE_TAC [MEM_TAKE] \\
+        ‘MEM v' vs0’ by METIS_TAC [MEM_TAKE] \\
+        ‘v IN ROW r'’ by simp [Abbr ‘v’, Abbr ‘r'’, RNEW_IN_ROW] \\
+         Suff ‘DISJOINT (ROW r') (set vs0)’ >- METIS_TAC [DISJOINT_ALT] \\
+         qunabbrev_tac ‘vs0’ \\
+         MATCH_MP_TAC DISJOINT_ROW_RNEWS >> simp [Abbr ‘r'’]) \\
      cheat
   (* TODO
      Know ‘EL h (l i) = EL h (args' i)’

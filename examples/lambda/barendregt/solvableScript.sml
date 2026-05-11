@@ -1878,6 +1878,13 @@ QED
 Theorem principal_hnf_tpm' =
         principal_hnf_tpm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
+Theorem solvable_permutator[simp] :
+    solvable (permutator n)
+Proof
+    MATCH_MP_TAC hnf_solvable
+ >> REWRITE_TAC [hnf_permutator]
+QED
+
 (* Genericity, following
 
     Takahashi, Masako. *A Simple Proof of the Genericity Lemma*.
