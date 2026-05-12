@@ -4291,40 +4291,62 @@ Proof
      Q.EXISTS_TAC ‘M i’ >> art [] \\
      simp [Abbr ‘M’, EL_MEM])
  >> DISCH_TAC
- >> cheat
- (* TODO
  >> PRINT_TAC "stage work on subtree_equiv_lemma"
+ >> Know ‘!q M. MEM M Ms /\ q <<= p /\ vsubterm X M q r <> NONE ==>
+                vsubterm X (apply pi M) q r <> NONE’
+ >- (rw [MEM_EL] >> rename1 ‘i < k’ \\
+     Cases_on ‘q’ >> simp [] \\
+     Suff ‘vsubterm X (apply pi (M i)) (h::t) r =
+           vsubterm X (H i) (h::t) r’ >- simp [] \\
+     simp [vsubterm_of_solvables] \\
+     Suff ‘principal_hnf (H i) = H i’ >- simp [] \\
+     MATCH_MP_TAC principal_hnf_reduce \\
+     simp [Abbr ‘H’, GSYM appstar_APPEND])
+ >> DISCH_TAC
+ >> simp []
  >> Suff ‘(!M N q.
             MEM M Ms /\ MEM N Ms /\ q <<= p /\
-            subtree_equiv X M N q r ==>
-            subtree_equiv X (apply pi M) (apply pi N) q r /\
-           (solvable (subterm' X M q r) ==>
-            solvable (subterm' X (apply pi M) q r))) /\
+            vsubterm X M q r <> NONE /\
+            vsubterm X N q r <> NONE /\
+            equivalent (vsubterm' X M q r) (vsubterm' X N q r) ==>
+            equivalent (vsubterm' X (apply pi M) q r)
+                       (vsubterm' X (apply pi N) q r) /\
+           (solvable (vsubterm' X M q r) ==>
+            solvable (vsubterm' X (apply pi M) q r))) /\
           (!M N q.
             MEM M Ms /\ MEM N Ms /\ q <<= p /\
-            subtree_equiv X (apply pi M) (apply pi N) q r ==>
-            subtree_equiv X M N q r /\
-           (solvable (subterm' X (apply pi M) q r) ==>
-            solvable (subterm' X M q r)))’
+            vsubterm X M q r <> NONE /\
+            vsubterm X N q r <> NONE /\
+            equivalent (vsubterm' X (apply pi M) q r)
+                       (vsubterm' X (apply pi N) q r) ==>
+            equivalent (vsubterm' X M q r) (vsubterm' X N q r) /\
+           (solvable (vsubterm' X (apply pi M) q r) ==>
+            solvable (vsubterm' X M q r)))’
  >- (STRIP_TAC \\
-     CONJ_TAC (* extra goal *)
+     CONJ_TAC
      >- (qx_genl_tac [‘q’, ‘t’] >> STRIP_TAC \\
          EQ_TAC >> STRIP_TAC >| (* 2 subgoals *)
          [ (* goal 1 (of 2) *)
-           Q.PAT_X_ASSUM ‘!M N q. MEM M Ms /\ MEM N Ms /\ q <<= p /\
-                                  subtree_equiv X M N q r ==> _’
+           Q.PAT_X_ASSUM ‘!M N q. MEM M Ms /\ MEM N Ms /\ q <<= p /\ _ /\ _ /\
+                                  equivalent (vsubterm' X M q r)
+                                             (vsubterm' X N q r) ==> _’
              (MP_TAC o Q.SPECL [‘t’, ‘t’, ‘q’]) >> simp [],
            (* goal 2 (of 2) *)
            Q.PAT_X_ASSUM
-             ‘!M N q. MEM M Ms /\ MEM N Ms /\ q <<= p /\
-                      subtree_equiv X (apply pi M) (apply pi N) q r ==> _’
+             ‘!M N q. MEM M Ms /\ MEM N Ms /\ q <<= p /\ _ /\ _ /\
+                      equivalent (vsubterm' X (apply pi M) q r)
+                                 (vsubterm' X (apply pi N) q r) ==> _’
              (MP_TAC o Q.SPECL [‘t’, ‘t’, ‘q’]) >> simp [] ]) \\
+     NTAC 2 (POP_ASSUM MP_TAC) \\
+     KILL_TAC \\
      METIS_TAC [])
  (* stage work, next goal:
 
     !M N q. MEM M Ms /\ MEM N Ms /\ q <<= p /\ subtree_equiv X M N q r ==>
             subtree_equiv X (apply pi M) (apply pi N) q r)
   *)
+ >> cheat
+ (* TODO
  >> CONJ_ASM1_TAC
  >- (qx_genl_tac [‘M2’, ‘N2’, ‘q’] >> simp [MEM_EL] \\
      ONCE_REWRITE_TAC
