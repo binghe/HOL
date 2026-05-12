@@ -4209,16 +4209,14 @@ Proof
          CONJ_TAC >- simp [LIST_TO_SET_TAKE, Abbr ‘vs'’] \\
          simp [Abbr ‘vs’, LIST_TO_SET_TAKE]) \\
      DISCH_TAC \\
-  (* applying subterm_fresh_tpm_cong *)
+  (* applying vsubterm_fresh_tpm_cong *)
      DISCH_TAC (* subterm X (tpm pm N) t (SUC r) <> NONE *) \\
-     cheat
-  (* TODO
-     MP_TAC (Q.SPECL [‘pm’, ‘X’, ‘N’, ‘t'’, ‘SUC r’] subterm_fresh_tpm_cong) \\
+     MP_TAC (Q.SPECL [‘pm’, ‘X’, ‘N’, ‘t'’, ‘SUC r’] vsubterm_fresh_tpm_cong) \\
      impl_tac >- simp [Abbr ‘pm’, MAP_ZIP] \\
      simp [] \\
      STRIP_TAC >> POP_ASSUM K_TAC (* already used *) \\
-  (* applying subterm_isub_permutator_cong' *)
-     MATCH_MP_TAC subterm_isub_permutator_cong_alt' \\
+  (* applying vsubterm_isub_permutator_cong' *)
+     MATCH_MP_TAC vsubterm_isub_permutator_cong_alt' \\
      qexistsl_tac [‘d_max’, ‘y’, ‘k’] >> simp [] \\
      CONJ_TAC (* easier *)
      >- (rpt STRIP_TAC \\
@@ -4231,14 +4229,14 @@ Proof
          Q_TAC (TRANS_TAC SUBSET_TRANS) ‘X UNION RANK r’ >> art [] \\
          Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
          rw [RANK_MONO]) \\
-  (* subterm_width N t <= d_max *)
-     Know ‘subterm_width (M i) (h::t') <= d’
-     >- (MATCH_MP_TAC subterm_width_inclusive \\
+  (* vsubterm_width N t' <= d_max *)
+     Know ‘vsubterm_width (M i) (h::t') <= d’
+     >- (MATCH_MP_TAC vsubterm_width_inclusive \\
          Q.EXISTS_TAC ‘h::t’ >> simp []) \\
      qabbrev_tac ‘Ms' = args i ++ DROP (n i) (MAP VAR vs)’ \\
-  (* applying subterm_width_induction_lemma (the general one) *)
-     Suff ‘subterm_width (M i) (h::t') <= d <=>
-           m i <= d /\ subterm_width (EL h Ms') t' <= d’
+  (* applying vsubterm_width_induction_lemma (the general one) *)
+     Suff ‘vsubterm_width (M i) (h::t') <= d <=>
+           h < d /\ m i <= d /\ vsubterm_width (EL h Ms') t' <= d’
      >- (Rewr' \\
          Know ‘EL h Ms' = N’
          >- (simp [Abbr ‘Ms'’, Abbr ‘N’] \\
@@ -4247,19 +4245,16 @@ Proof
          Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘d’ >> art [] \\
          simp [Abbr ‘d_max’]) \\
   (* stage work *)
-     MATCH_MP_TAC subterm_width_induction_lemma_alt \\
+     MATCH_MP_TAC vsubterm_width_induction_lemma_alt \\
      qexistsl_tac [‘X’, ‘Y’, ‘r’, ‘M0 i’, ‘n i’, ‘n_max’, ‘vs’, ‘M1 i’] \\
      simp [GSYM appstar_APPEND] \\
-     rw [SUBSET_DEF, Abbr ‘Y’]
-     >- (Q.EXISTS_TAC ‘FV (M i)’ >> art [] \\
-         Q.EXISTS_TAC ‘M i’ >> art [] \\
-         rw [Abbr ‘M’, EL_MEM]) \\
-     MATCH_MP_TAC ltree_paths_inclusive \\
-     Q.EXISTS_TAC ‘h::t’ >> simp []
-     *))
+     rw [SUBSET_DEF, Abbr ‘Y’] \\
+     Q.EXISTS_TAC ‘FV (M i)’ >> art [] \\
+     Q.EXISTS_TAC ‘M i’ >> art [] \\
+     simp [Abbr ‘M’, EL_MEM])
+ >> DISCH_TAC
  >> cheat
  (* TODO
- >> DISCH_TAC
  >> PRINT_TAC "stage work on subtree_equiv_lemma"
  >> Suff ‘(!M N q.
             MEM M Ms /\ MEM N Ms /\ q <<= p /\
