@@ -794,12 +794,51 @@ Proof
 QED
 
 Theorem lameta_vsubterm_cong_has_bnf :
-    !X M N p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+    !X M N r. FINITE X /\ FV M SUBSET X UNION RANK r /\
                           FV N SUBSET X UNION RANK r /\
-                M === N /\ has_bnf M /\ has_bnf N
-            ==> vsubterm' X M p r === vsubterm' X N p r
+              M === N /\ has_bnf M /\ has_bnf N
+         ==> !p. vsubterm' X M p r === vsubterm' X N p r
 Proof
     rpt STRIP_TAC
+ >> ‘vsubterm X M p r <> NONE /\
+     vsubterm X N p r <> NONE’ by PROVE_TAC [vsubterm_not_none_has_bnf]
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘p’, ‘r’] lameta_vsubterm_cong) >> simp []
+QED
+
+Theorem lameta_has_bnf_imp_both :
+    !M N. M === N /\ (has_bnf M \/ has_bnf N) ==> has_bnf M /\ has_bnf N
+Proof
+    rpt STRIP_TAC >> art []
+ >| [ (* goal 1 (of 2) *)
+      fs [GSYM has_benf_has_bnf, has_benf_def] \\
+      rename1 ‘benf P’ \\
+      Q.EXISTS_TAC ‘P’ >> art [] \\
+      Q_TAC (TRANS_TAC lameta_TRANS) ‘M’ >> art [] \\
+      simp [Once lameta_SYM],
+      (* goal 1 (of 2) *)
+      fs [GSYM has_benf_has_bnf, has_benf_def] \\
+      rename1 ‘benf P’ \\
+      Q.EXISTS_TAC ‘P’ >> art [] \\
+      Q_TAC (TRANS_TAC lameta_TRANS) ‘N’ >> art [] ]
+QED
+
+Theorem lameq_has_bnf_imp_both :
+    !M N. M == N /\ (has_bnf M \/ has_bnf N) ==> has_bnf M /\ has_bnf N
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> MATCH_MP_TAC lameta_has_bnf_imp_both >> art []
+ >> MATCH_MP_TAC lameq_imp_lameta >> art []
+QED
+
+Theorem lameta_vsubterm_cong_has_bnf' :
+    !X M N r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                          FV N SUBSET X UNION RANK r /\
+              M === N /\ (has_bnf M \/ has_bnf N)
+         ==> !p. vsubterm' X M p r === vsubterm' X N p r
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> ‘has_bnf M /\ has_bnf N’ by PROVE_TAC [lameta_has_bnf_imp_both]
+ >> Q.X_GEN_TAC ‘p’
  >> ‘vsubterm X M p r <> NONE /\
      vsubterm X N p r <> NONE’ by PROVE_TAC [vsubterm_not_none_has_bnf]
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘p’, ‘r’] lameta_vsubterm_cong)
@@ -825,7 +864,6 @@ Theorem vsubterm_is_none_iff_parent_unsolvable :
               p <> [] /\
               (vsubterm X M (FRONT p) r <> NONE ==>
                unsolvable (vsubterm' X M (FRONT p) r)))
-
 Proof
     rpt GEN_TAC
  >> STRIP_TAC >> POP_ASSUM MP_TAC
