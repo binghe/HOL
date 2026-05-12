@@ -8,7 +8,7 @@
 Theory separability
 Ancestors
   combin option arithmetic pred_set list rich_list llist ltree relation
-  topology nomset basic_swap term appFOLDL chap2 chap3 horeduction
+  pair topology nomset basic_swap term appFOLDL chap2 chap3 horeduction
   head_reduction standardisation solvable boehm takahashiS3 lameta_complete
 Libs
   hurdUtils tautLib numLib listLib NEWLib reductionEval head_reductionLib
@@ -2530,8 +2530,203 @@ Proof
  >> vsubterm_fresh_subst_cong_tac
 QED
 
+Theorem FV_vsubterm_thm :
+    !X v p M r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                vsubterm X M p r <> NONE /\
+                v # M /\ v IN X UNION RANK r ==> v # (vsubterm' X M p r)
+Proof
+    NTAC 2 GEN_TAC
+ >> Induct_on ‘p’ >- rw []
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- (Q.PAT_X_ASSUM ‘vsubterm X M (h::p) r <> NONE’ MP_TAC \\
+     simp [vsubterm_of_unsolvables])
+ >> Q.PAT_X_ASSUM ‘vsubterm X M (h::p) r <> NONE’ MP_TAC
+ >> Q_TAC (UNBETA_TAC [vsubterm_def]) ‘vsubterm X M (h::p) r’
+ >> reverse (Cases_on ‘h < m’) >> simp [Abbr ‘M2’]
+ >- (Cases_on ‘p = []’
+     >- (simp [Abbr ‘z’, Abbr ‘zs’, ADD_CLAUSES, GSYM RNEW_def] \\
+         Suff ‘RNEW r (j + n) X NOTIN X UNION RANK r’ >- METIS_TAC [] \\
+         simp [RNEW_thm]) \\
+     simp [vsubterm_var] \\
+    ‘LENGTH p + SUC r - 1 = r + LENGTH p’ by simp [] >> POP_ORW \\
+     qabbrev_tac ‘r' = r + LENGTH p’ \\
+     qabbrev_tac ‘n' = LAST p’ \\
+     Suff ‘RNEW r' n' X NOTIN X UNION RANK r’ >- METIS_TAC [] \\
+     MP_TAC (Q.SPECL [‘r'’, ‘n'’, ‘X’] RNEW_thm) >> art [] \\
+     Suff ‘RANK r SUBSET RANK r'’ >- SET_TAC [] \\
+     simp [RANK_MONO, Abbr ‘r'’])
+ >> DISCH_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC subterm_induction_lemma' \\
+     qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp [] \\
+     simp [Abbr ‘m’, Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC hnf_children_size_alt \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> simp [])
+ >> reverse CONJ_TAC
+ >- (Q.PAT_X_ASSUM ‘v IN X UNION RANK r’ MP_TAC \\
+     Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
+     simp [RANK_MONO])
+ (* applying FV_subterm_lemma *)
+ >> Know ‘FV (EL h Ms) SUBSET FV M UNION set vs’
+ >- (MATCH_MP_TAC FV_subterm_lemma \\
+     qexistsl_tac [‘X’, ‘r’, ‘M0’, ‘n’, ‘m’, ‘M1’] >> simp [])
+ >> DISCH_TAC
+ >> STRIP_TAC (* v IN FV (EL h Ms) *)
+ >> Know ‘v IN FV M UNION set vs’ >- METIS_TAC [SUBSET_DEF]
+ >> rw [IN_UNION]
+ >> Q.PAT_X_ASSUM ‘v IN X UNION RANK r’ MP_TAC
+ >> rw [IN_UNION]
+ >- (qunabbrev_tac ‘vs’ \\
+     Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’ \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
+     rw [DISJOINT_ALT'])
+ >> Suff ‘DISJOINT (RANK r) (set vs)’ >- rw [DISJOINT_ALT]
+ >> qunabbrev_tac ‘vs’
+ >> MATCH_MP_TAC DISJOINT_RANK_RNEWS >> simp []
+QED
+
+Theorem vsubterm_once_fresh_tpm_cong[local] :
+    !p X M r v v'. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                   vsubterm X M p r <> NONE /\
+                   v  IN X UNION RANK r /\
+                   v' IN X UNION RANK r /\ v' # M
+               ==> vsubterm X (tpm [(v,v')] M) p r <> NONE /\
+                   vsubterm' X (tpm [(v,v')] M) p r = tpm [(v,v')] (vsubterm' X M p r)
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> Know ‘v' # vsubterm' X M p r’
+ >- (MATCH_MP_TAC FV_vsubterm_thm >> art [])
+ >> DISCH_TAC
+ >> simp [fresh_tpm_subst']
+ >> MATCH_MP_TAC vsubterm_fresh_subst_cong >> art []
+QED
+
+Theorem vsubterm_fresh_tpm_cong_lemma[local] :
+    !pi X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                 vsubterm X M p r <> NONE /\
+                 set (MAP FST pi) SUBSET X UNION RANK r /\
+                 set (MAP SND pi) SUBSET X UNION RANK r /\
+                 ALL_DISTINCT (MAP FST pi) /\
+                 ALL_DISTINCT (MAP SND pi) /\
+                 DISJOINT (set (MAP FST pi)) (set (MAP SND pi)) /\
+                 DISJOINT (set (MAP SND pi)) (FV M)
+             ==> vsubterm X (tpm pi M) p r <> NONE /\
+                 vsubterm' X (tpm pi M) p r = tpm pi (vsubterm' X M p r)
+Proof
+    Induct_on ‘pi’ >- rw []
+ >> simp [FORALL_PROD]
+ >> qx_genl_tac [‘u’, ‘v’]
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> ‘!t. tpm ((u,v)::pi) t = tpm [(u,v)] (tpm pi t)’ by rw [Once tpm_CONS]
+ >> POP_ORW
+ >> qabbrev_tac ‘N = tpm pi M’
+ (* applying IH *)
+ >> Q.PAT_X_ASSUM ‘!X M p r. P’ (MP_TAC o Q.SPECL [‘X’, ‘M’, ‘p’, ‘r’]) >> simp []
+ >> STRIP_TAC
+ >> POP_ASSUM (REWRITE_TAC o wrap o SYM)
+ >> MATCH_MP_TAC vsubterm_once_fresh_tpm_cong >> simp []
+ >> qabbrev_tac ‘vs  = MAP FST pi’
+ >> qabbrev_tac ‘vs' = MAP SND pi’
+ >> ‘LENGTH vs' = LENGTH vs’ by rw [Abbr ‘vs’, Abbr ‘vs'’]
+ >> CONJ_TAC
+ >- (simp [Abbr ‘N’, SUBSET_DEF, FV_tpm] \\
+     rpt STRIP_TAC \\
+     qabbrev_tac ‘y = lswapstr (REVERSE pi) x’ \\
+    ‘x = lswapstr pi y’ by rw [Abbr ‘y’] >> POP_ORW \\
+     Know ‘pi = ZIP (vs,vs')’
+     >- (simp [Abbr ‘vs’, Abbr ‘vs'’, LIST_EQ_REWRITE] \\
+         rw [EL_ZIP, EL_MAP]) >> Rewr' \\
+     Cases_on ‘MEM y vs’
+     >- (Suff ‘lswapstr (ZIP (vs,vs')) y IN set vs'’ >- ASM_SET_TAC [] \\
+         MATCH_MP_TAC MEM_lswapstr >> simp []) \\
+     Cases_on ‘MEM y vs'’
+     >- (Suff ‘lswapstr (ZIP (vs,vs')) y IN set vs’ >- ASM_SET_TAC [] \\
+         MATCH_MP_TAC MEM_lswapstr' >> simp []) \\
+     Suff ‘lswapstr (ZIP (vs,vs')) y = y’ >- ASM_SET_TAC [] \\
+     MATCH_MP_TAC lswapstr_unchanged' >> simp [MAP_ZIP])
+ >> simp [Abbr ‘N’]
+ >> Suff ‘lswapstr (REVERSE pi) v = v’ >- rw []
+ >> MATCH_MP_TAC lswapstr_unchanged'
+ >> simp [MAP_REVERSE, MEM_REVERSE]
+QED
+
+Theorem vsubterm_fresh_tpm_cong :
+    !pi X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                 set (MAP FST pi) SUBSET X UNION RANK r /\
+                 set (MAP SND pi) SUBSET X UNION RANK r /\
+                 ALL_DISTINCT (MAP FST pi) /\
+                 ALL_DISTINCT (MAP SND pi) /\
+                 DISJOINT (set (MAP FST pi)) (set (MAP SND pi)) /\
+                 DISJOINT (set (MAP SND pi)) (FV M)
+            ==> (vsubterm X M p r = NONE <=>
+                 vsubterm X (tpm pi M) p r = NONE) /\
+                (vsubterm X M p r <> NONE ==>
+                 vsubterm' X (tpm pi M) p r = tpm pi (vsubterm' X M p r))
+Proof
+    reverse (rpt STRIP_TAC)
+ >- (MATCH_MP_TAC (cj 2 vsubterm_fresh_tpm_cong_lemma) >> art [])
+ >> reverse EQ_TAC
+ >- (CCONTR_TAC >> fs [] \\
+     Q.PAT_X_ASSUM ‘vsubterm X (tpm pi M) p r = NONE’ MP_TAC \\
+     simp [] \\
+     MATCH_MP_TAC (cj 1 vsubterm_fresh_tpm_cong_lemma) >> art [])
+(* stage work *)
+ >> CCONTR_TAC >> fs []
+ >> qabbrev_tac ‘N = tpm pi M’
+ >> Q.PAT_X_ASSUM ‘vsubterm X M p r = NONE’ MP_TAC
+ >> ‘M = tpm (REVERSE pi) N’ by rw [Abbr ‘N’]
+ >> simp []
+ >> qabbrev_tac ‘xs = MAP FST pi’
+ >> qabbrev_tac ‘ys = MAP SND pi’
+ >> ‘LENGTH ys = LENGTH xs’ by rw [Abbr ‘xs’, Abbr ‘ys’]
+ >> Know ‘pi = ZIP (xs,ys)’
+ >- (rw [Abbr ‘xs’, Abbr ‘ys’, ZIP_MAP] \\
+     rw [LIST_EQ_REWRITE, EL_MAP])
+ >> DISCH_TAC
+ >> simp [REVERSE_ZIP]
+ >> qabbrev_tac ‘xs' = REVERSE xs’
+ >> qabbrev_tac ‘ys' = REVERSE ys’
+ >> ‘LENGTH ys' = LENGTH xs'’ by rw [Abbr ‘xs'’, Abbr ‘ys'’]
+ (* applying pmact_flip_args_all *)
+ >> ‘tpm (ZIP (xs',ys')) N = tpm (ZIP (ys',xs')) N’ by rw [pmact_flip_args_all]
+ >> POP_ORW
+ >> qabbrev_tac ‘pi' = ZIP (ys',xs')’
+ >> MATCH_MP_TAC (cj 1 vsubterm_fresh_tpm_cong_lemma)
+ >> simp [Abbr ‘pi'’, MAP_ZIP]
+ (* applying FV_tpm_lemma *)
+ >> CONJ_TAC
+ >- (qunabbrev_tac ‘N’ >> MATCH_MP_TAC FV_tpm_lemma \\
+     Q.EXISTS_TAC ‘r’ >> simp [MAP_ZIP] \\
+     ASM_SET_TAC [])
+ >> CONJ_TAC
+ >- (Q.PAT_X_ASSUM ‘set ys SUBSET X UNION RANK r’ MP_TAC \\
+     rw [SUBSET_DEF, Abbr ‘ys'’])
+ >> CONJ_TAC
+ >- (Q.PAT_X_ASSUM ‘set xs SUBSET X UNION RANK r’ MP_TAC \\
+     rw [SUBSET_DEF, Abbr ‘xs'’])
+ >> CONJ_TAC >- rw [ALL_DISTINCT_REVERSE, Abbr ‘ys'’]
+ >> CONJ_TAC >- rw [ALL_DISTINCT_REVERSE, Abbr ‘xs'’]
+ >> CONJ_TAC
+ >- (rw [DISJOINT_ALT', Abbr ‘xs'’] \\
+     Suff ‘DISJOINT (set xs) (set ys')’ >- rw [DISJOINT_ALT] \\
+     rw [DISJOINT_ALT', Abbr ‘ys'’] \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set xs) (set ys)’ MP_TAC \\
+     rw [DISJOINT_ALT'])
+ (* stage work *)
+ >> Suff ‘DISJOINT (set xs) (FV N)’ >- rw [DISJOINT_ALT, Abbr ‘xs'’]
+ >> POP_ASSUM K_TAC
+ >> simp [Abbr ‘N’, Abbr ‘xs'’, Abbr ‘ys'’]
+ >> POP_ASSUM K_TAC (* pi = ZIP (xs,ys) *)
+ >> ONCE_REWRITE_TAC [DISJOINT_SYM]
+ >> Know ‘tpm (ZIP (xs,ys)) M = M ISUB ZIP (MAP VAR ys,xs)’
+ >- (MATCH_MP_TAC fresh_tpm_isub' >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC FV_renaming_disjoint >> art []
+QED
+
 (* TODO
-  subterm_fresh_tpm_cong
   subterm_isub_permutator_cong_alt'
   subterm_width_induction_lemma_alt
  *)
