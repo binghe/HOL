@@ -3224,8 +3224,7 @@ Proof
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> ‘DISJOINT (set xs) Z’ by rw [Abbr ‘Z’, DISJOINT_UNION']
  (* FV properties of the head variable y (and children args) *)
- >> Know ‘!i. i < k ==> y i IN Z /\
-                        BIGUNION (IMAGE FV (set (args i))) SUBSET Z’
+ >> Know ‘!i. i < k ==> y i IN Z /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z’
  >- (NTAC 2 STRIP_TAC \\
      qabbrev_tac ‘Z' = FV (M i) UNION set vs’ \\
      Suff ‘y i IN Z' /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z'’
@@ -3242,8 +3241,7 @@ Proof
          MATCH_MP_TAC principal_hnf_FV_SUBSET' >> rw []) \\
      qunabbrev_tac ‘Z'’ \\
      Suff ‘y i IN FV (M0 i) UNION set vs /\
-           BIGUNION (IMAGE FV (set (args i))) SUBSET
-           FV (M0 i) UNION set vs’
+           BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M0 i) UNION set vs’
      >- SET_TAC [] \\
      Know ‘FV (M1 i) SUBSET FV (M0 i @* MAP VAR vs)’
      >- (‘M1 i = principal_hnf (M0 i @* MAP VAR vs)’ by rw [] >> POP_ORW \\
@@ -3577,7 +3575,7 @@ Proof
  >- (rpt STRIP_TAC \\
      Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
      >- METIS_TAC [lameq_solvable_cong] \\
-     MATCH_MP_TAC hnf_solvable >> rw [hnf_appstar, GSYM appstar_APPEND])
+     MATCH_MP_TAC hnf_solvable >> simp [hnf_appstar, GSYM appstar_APPEND])
  >> DISCH_TAC
  >> CONJ_TAC (* EVERY is_ready ... *)
  >- (rpt (Q.PAT_X_ASSUM ‘Boehm_transform _’ K_TAC) \\
@@ -4746,33 +4744,33 @@ Proof
            FV (vsubterm' X (M j2) q r) SUBSET X UNION RANK (r + LENGTH q)’
      >- (CONJ_TAC \\
          MATCH_MP_TAC FV_vsubterm_upperbound >> simp []) >> STRIP_TAC \\
-     qmatch_abbrev_tac ‘equivalent t1 t2 ==> _’ \\
-     qabbrev_tac ‘r' = r + LENGTH q’ \\
-     Know ‘equivalent t1 t2 <=> equivalent2 X t1 t2 r'’
+     qmatch_abbrev_tac ‘equivalent N N' ==> _’ \\
+     qabbrev_tac ‘r1 = r + LENGTH q’ \\
+     Know ‘equivalent N N' <=> equivalent2 X N N' r1’
      >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm \\
-         simp [Abbr ‘r'’]) >> Rewr' \\
+         simp [Abbr ‘r1’]) >> Rewr' \\
   (* applying FV_ISUB_upperbound and FV_tpm_lemma' *)
-    ‘r < r'’ by simp [Abbr ‘r'’] \\
-     Know ‘set (MAP FST pm') SUBSET RANK r' /\
-           set (MAP SND pm') SUBSET RANK r'’
+    ‘r < r1’ by simp [Abbr ‘r1’] \\
+     Know ‘set (MAP FST pm') SUBSET RANK r1 /\
+           set (MAP SND pm') SUBSET RANK r1’
      >- (simp [Abbr ‘pm'’, MAP_REVERSE, MAP_ZIP, Abbr ‘pm’] \\
          qunabbrevl_tac [‘vs0’, ‘vsr’] \\
          CONJ_TAC \\
-         MATCH_MP_TAC RNEWS_SUBSET_RANK >> simp [Abbr ‘r'’]) >> STRIP_TAC \\
-     Know ‘FV (tpm pm' t1 ISUB ss) SUBSET X UNION RANK r'’
-     >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV (tpm pm' t1) UNION FVS ss’ \\
+         MATCH_MP_TAC RNEWS_SUBSET_RANK >> simp [Abbr ‘r1’]) >> STRIP_TAC \\
+     Know ‘FV (tpm pm' N ISUB ss) SUBSET X UNION RANK r1’
+     >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV (tpm pm' N) UNION FVS ss’ \\
          simp [FV_ISUB_upperbound] \\
          MATCH_MP_TAC FV_tpm_lemma' \\
-         Q.EXISTS_TAC ‘r'’ >> simp []) >> DISCH_TAC \\
-     Know ‘FV (tpm pm' t2 ISUB ss) SUBSET X UNION RANK r'’
-     >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV (tpm pm' t2) UNION FVS ss’ \\
+         Q.EXISTS_TAC ‘r1’ >> simp []) >> DISCH_TAC \\
+     Know ‘FV (tpm pm' N' ISUB ss) SUBSET X UNION RANK r1’
+     >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV (tpm pm' N') UNION FVS ss’ \\
          simp [FV_ISUB_upperbound] \\
          MATCH_MP_TAC FV_tpm_lemma' \\
-         Q.EXISTS_TAC ‘r'’ >> simp []) >> DISCH_TAC \\
-     qmatch_abbrev_tac ‘_ ==> equivalent t3 t4’ \\
-     Know ‘equivalent t3 t4 <=> equivalent2 X t3 t4 r'’
+         Q.EXISTS_TAC ‘r1’ >> simp []) >> DISCH_TAC \\
+     qmatch_abbrev_tac ‘_ ==> equivalent W W'’ \\
+     Know ‘equivalent W W' <=> equivalent2 X W W' r1’
      >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm \\
-         simp [Abbr ‘r'’]) >> Rewr' \\
+         simp [Abbr ‘r1’]) >> Rewr' \\
      cheat)
  >> cheat
   (* TODO
