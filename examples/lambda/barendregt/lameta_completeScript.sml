@@ -4455,8 +4455,6 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
-Overload "=~" = “equivalent”
-
 (* A more general definition (but many existing hard proofs are still
    using the above “equivalent”).
  *)

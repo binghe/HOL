@@ -1029,6 +1029,12 @@ Proof
  >> rw [hnf_appstar]
 QED
 
+Theorem principal_hnf_VAR[simp] :
+    principal_hnf (VAR y) = VAR y
+Proof
+    MATCH_MP_TAC principal_hnf_reduce >> simp []
+QED
+
 Theorem principal_hnf_stable :
     !M. has_hnf M ==> principal_hnf (principal_hnf M) = principal_hnf M
 Proof
