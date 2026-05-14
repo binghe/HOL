@@ -5728,10 +5728,52 @@ Proof
          numLib.ARITH_TAC) >> Rewr' \\
      Suff ‘f j1 <> f j2’ >- simp [] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
- (* instantiating the key substitution assumption with q <> [] *)
- >> Q.PAT_X_ASSUM ‘!q. q <<= p /\ q <> [] ==> _’ (MP_TAC o Q.SPEC ‘q’)
- >> simp [] >> DISCH_TAC
+ (* stage work, now q <> [] *)
  >> NTAC 2 DISCH_TAC (* vsubterm <> NONE *)
+ (* converting equivalent to equivalent2 *)
+ >> ‘0 < LENGTH q’ by simp [LENGTH_NON_NIL]
+ >> Know ‘FV (vsubterm' X (M j1) q r) SUBSET X UNION RANK (r + LENGTH q) /\
+          FV (vsubterm' X (M j2) q r) SUBSET X UNION RANK (r + LENGTH q)’
+ >- (CONJ_TAC \\
+     MATCH_MP_TAC FV_vsubterm_upperbound >> simp [])
+ >> STRIP_TAC
+ >> qmatch_abbrev_tac ‘~equivalent N N' ==> _’
+ >> qabbrev_tac ‘r1 = r + LENGTH q’
+ >> Know ‘equivalent N N' <=> equivalent2 X N N' r1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm \\
+     simp [Abbr ‘r1’])
+ >> Rewr'
+ >> Q.PAT_X_ASSUM ‘!q. q <<= p /\ q <> [] ==> _’ (MP_TAC o Q.SPEC ‘q’)
+ >> simp []
+ >> DISCH_THEN K_TAC (* _ = tpm (REVERSE pm) _ ISUB ss *)
+ >> Q.PAT_X_ASSUM ‘!q i. i < k /\ q <> [] ==> _ = vsubterm X (H i) q r’ K_TAC
+ >> qabbrev_tac ‘pm' = REVERSE pm’
+ (* applying FV_ISUB_upperbound and FV_tpm_lemma' *)
+ >> ‘r < r1’ by simp [Abbr ‘r1’]
+ >> Know ‘set (MAP FST pm') SUBSET RANK r1 /\
+          set (MAP SND pm') SUBSET RANK r1’
+ >- (simp [Abbr ‘pm'’, MAP_REVERSE, MAP_ZIP, Abbr ‘pm’] \\
+     qunabbrevl_tac [‘vs0’, ‘vsr’] \\
+     CONJ_TAC \\
+     MATCH_MP_TAC RNEWS_SUBSET_RANK >> simp [Abbr ‘r1’])
+ >> STRIP_TAC
+ >> Know ‘FV (tpm pm' N ISUB ss) SUBSET X UNION RANK r1’
+ >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV (tpm pm' N) UNION FVS ss’ \\
+     simp [FV_ISUB_upperbound] \\
+     MATCH_MP_TAC FV_tpm_lemma' \\
+     Q.EXISTS_TAC ‘r1’ >> simp [])
+ >> DISCH_TAC
+ >> Know ‘FV (tpm pm' N' ISUB ss) SUBSET X UNION RANK r1’
+ >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV (tpm pm' N') UNION FVS ss’ \\
+     simp [FV_ISUB_upperbound] \\
+     MATCH_MP_TAC FV_tpm_lemma' \\
+     Q.EXISTS_TAC ‘r1’ >> simp [])
+ >> DISCH_TAC
+ >> qmatch_abbrev_tac ‘_ ==> ~equivalent W W'’
+ >> Know ‘equivalent W W' <=> equivalent2 X W W' r1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm \\
+     simp [Abbr ‘r1’])
+ >> Rewr'
  >> cheat
  (* TODO
  (* some easy cases *)
