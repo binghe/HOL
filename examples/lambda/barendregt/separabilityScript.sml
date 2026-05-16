@@ -7652,9 +7652,9 @@ Theorem vsubterm_agree_upto_lemma :
            (!q M. MEM M Ms /\ q <<= p ==>
                  (vsubterm X M q r = NONE <=>
                   vsubterm X (apply pi M) q r = NONE)) /\
-           (!M. MEM M Ms /\ vsubterm X M p r <> NONE ==>
-               (solvable (vsubterm' X M p r) <=>
-                solvable (vsubterm' X (apply pi M) p r))) /\
+           (!q M. MEM M Ms /\ q <<= p /\ vsubterm X M q r <> NONE ==>
+               (solvable (vsubterm' X M q r) <=>
+                solvable (vsubterm' X (apply pi M) q r))) /\
            (!M N. MEM M Ms /\ MEM N Ms /\
                   vsubterm X M p r <> NONE /\
                   vsubterm X N p r <> NONE ==>
@@ -7728,6 +7728,16 @@ Theorem vsubterm_faithful' =
 Theorem vsubterm_faithful_two' =
         vsubterm_faithful_two |> Q.SPEC ‘[]’ |> SRULE []
 
+Theorem vsubterm_agree_upto_solvable_imp_all :
+    !X Ms p r N. vsubterm_agree_upto X Ms p r /\ p <> [] /\
+                 MEM N Ms /\ solvable N ==> !M. MEM M Ms ==> solvable M
+Proof
+    rw [vsubterm_agree_upto_def]
+ >> Q.PAT_X_ASSUM ‘!q M N. _’ (MP_TAC o Q.SPECL [‘[]’, ‘M’, ‘N’])
+ >> rw []
+ >> CCONTR_TAC >> gs [equivalent_def]
+QED
+
 (* cf. agree_upto_thm *)
 Theorem vsubterm_agree_upto_thm :
     !X Ms p r. FINITE X /\ 0 < r /\
@@ -7745,37 +7755,32 @@ Proof
      Q.EXISTS_TAC ‘[]’ >> simp [vsubterm_faithful'])
  (* stage work *)
  >> rw [vsubterm_faithful_def]
- >> cheat
- (* TODO
  (* trivial case: all unsolvable *)
  >> Cases_on ‘!M. MEM M Ms ==> unsolvable M’
- >- (Q.EXISTS_TAC ‘[]’ \\
-     reverse (rw [])
-     >- (rw [equivalent_of_unsolvables] \\
-         rw [subtree_equiv_def, BT_of_unsolvables]) \\
-     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘r’] BT_valid_paths_thm') >> rw [] \\
-     Know ‘subterm X M (h::p) r = NONE <=> h::p NOTIN ltree_paths (BT' X M r)’
-     >- (Suff ‘h::p IN ltree_paths (BT' X M r) <=> subterm X M (h::p) r <> NONE’
-         >- PROVE_TAC [] \\
-         MATCH_MP_TAC BT_ltree_paths_thm >> simp []) >> Rewr' \\
-     STRONG_DISJ_TAC \\
-     Suff ‘solvable M’ >- METIS_TAC [] \\
-     MATCH_MP_TAC ltree_paths_imp_solvable \\
-     qexistsl_tac [‘h::p’, ‘X’, ‘r’] >> simp [])
- (* one is solvable, all are solvable *)
+ >- (Q.EXISTS_TAC ‘[]’ >> simp [] \\
+     simp [vsubterm_of_unsolvables, equivalent_of_unsolvables] \\
+     rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘vsubterm X M (h::p) r <> NONE’ MP_TAC \\
+     simp [vsubterm_of_unsolvables])
+ >> fs []
+ >> ‘Ms <> []’ by PROVE_TAC [NULL_EQ, NOT_NULL_MEM]
  >> Know ‘!M. MEM M Ms ==> solvable M’
- >- (rpt STRIP_TAC \\
-     MATCH_MP_TAC ltree_paths_imp_solvable \\
-     qexistsl_tac [‘h::p’, ‘X’, ‘r’] >> simp [GSYM BT_paths_thm])
- >> POP_ASSUM K_TAC >> DISCH_TAC
- (* applying agree_upto_lemma *)
- >> MP_TAC (Q.SPECL [‘X’, ‘Ms’, ‘h::p’, ‘r’] agree_upto_lemma) >> rw []
- (* p0 is asserted *)
+ >- (MATCH_MP_TAC vsubterm_agree_upto_solvable_imp_all \\
+     qexistsl_tac [‘X’, ‘h::p’, ‘r’, ‘M’] >> simp [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘MEM M Ms’   K_TAC
+ >> Q.PAT_X_ASSUM ‘solvable M’ K_TAC
+ (* applying vsubterm_agree_upto_lemma *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘Ms’, ‘h::p’, ‘r’] vsubterm_agree_upto_lemma) >> rw []
  >> rename1 ‘Boehm_transform p0’
- >> fs [is_ready_alt']
+ >> Know ‘!M. MEM M Ms ==> solvable (apply p0 M)’
+ >- (Q.X_GEN_TAC ‘N’ >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!q M. _ ==> (solvable (vsubterm' X M q r) <=> _)’
+       (MP_TAC o Q.SPECL [‘[]’, ‘N’]) >> simp [])
+ >> DISCH_TAC
  (* decomposing Ms *)
  >> qabbrev_tac ‘k = LENGTH Ms’
- >> ‘k <> 0’ by rw [Abbr ‘k’, LENGTH_NIL]
+ >> ‘0 < k’ by simp [Abbr ‘k’, LENGTH_NON_NIL]
  >> qabbrev_tac ‘M = \i. EL i Ms’
  >> Know ‘!P. (!N. MEM N Ms ==> P N) <=> !i. i < k ==> P (M i)’
  >- (Q.X_GEN_TAC ‘P’ \\
@@ -7786,11 +7791,13 @@ Proof
  >> qabbrev_tac ‘M1 = \i. principal_hnf (apply p0 (M i))’
  >> Know ‘!i. i < k ==> ?y Ns. M1 i = VAR y @* Ns /\ EVERY (\e. y # e) Ns’
  >- (rpt STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!i. i < k ==> solvable (apply p0 (M i)) /\ _’ drule \\
-     rw [Abbr ‘M1’] \\
-     qexistsl_tac [‘y’, ‘Ns’] >> art [] \\
-     rw [principal_hnf_thm', hnf_appstar])
+     Q.PAT_X_ASSUM ‘!i. i < k ==> is_ready (apply p0 (M i))’
+       (MP_TAC o Q.SPEC ‘i’) >> rw [is_ready_alt] \\
+     qexistsl_tac [‘y’, ‘Ns’] \\
+     simp [Abbr ‘M1’, principal_hnf_thm', hnf_appstar])
  >> DISCH_TAC
+ >> cheat
+ (* TODO
  (* NOTE: take the head variable and children terms from ‘N 0’ *)
  >> Know ‘?y Ns. M1 0 = VAR y @* Ns’
  >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [] \\
