@@ -7733,8 +7733,8 @@ Theorem vsubterm_agree_upto_solvable_imp_all :
                  MEM N Ms /\ solvable N ==> !M. MEM M Ms ==> solvable M
 Proof
     rw [vsubterm_agree_upto_def]
- >> Q.PAT_X_ASSUM ‘!q M N. _’ (MP_TAC o Q.SPECL [‘[]’, ‘M’, ‘N’])
- >> rw []
+ >> Q.PAT_X_ASSUM ‘!q M N. _’
+      (MP_TAC o Q.SPECL [‘[]’, ‘M’, ‘N’]) >> rw []
  >> CCONTR_TAC >> gs [equivalent_def]
 QED
 
@@ -7771,7 +7771,8 @@ Proof
  >> Q.PAT_X_ASSUM ‘MEM M Ms’   K_TAC
  >> Q.PAT_X_ASSUM ‘solvable M’ K_TAC
  (* applying vsubterm_agree_upto_lemma *)
- >> MP_TAC (Q.SPECL [‘X’, ‘Ms’, ‘h::p’, ‘r’] vsubterm_agree_upto_lemma) >> rw []
+ >> MP_TAC (Q.SPECL [‘X’, ‘Ms’, ‘h::p’, ‘r’]
+                    vsubterm_agree_upto_lemma) >> rw []
  >> rename1 ‘Boehm_transform p0’
  >> Know ‘!M. MEM M Ms ==> solvable (apply p0 M)’
  >- (Q.X_GEN_TAC ‘N’ >> DISCH_TAC \\
@@ -7796,8 +7797,6 @@ Proof
      qexistsl_tac [‘y’, ‘Ns’] \\
      simp [Abbr ‘M1’, principal_hnf_thm', hnf_appstar])
  >> DISCH_TAC
- >> cheat
- (* TODO
  (* NOTE: take the head variable and children terms from ‘N 0’ *)
  >> Know ‘?y Ns. M1 0 = VAR y @* Ns’
  >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [] \\
@@ -7811,43 +7810,38 @@ Proof
      Q.EXISTS_TAC ‘Ns'’ \\
      Suff ‘y = y' /\ LENGTH Ns' = m’ >- rw [] \\
      Cases_on ‘i = 0’ >- fs [] \\
-     FULL_SIMP_TAC std_ss [agree_upto_def] \\
-     Q.PAT_X_ASSUM ‘!q M N. q <<= h::p /\ q <> h::p /\
-                            MEM M (apply p0 Ms) /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘[]’, ‘apply p0 ((M :num -> term) 0)’,
-                                ‘apply p0 ((M :num -> term) i)’]) \\
-     simp [subtree_equiv_def, MEM_MAP] \\
+     Q.PAT_X_ASSUM ‘vsubterm_agree_upto X (apply p0 Ms) (h::p) r’
+                   (MP_TAC o REWRITE_RULE [vsubterm_agree_upto_def]) \\
+     DISCH_THEN (MP_TAC o
+                 Q.SPECL [‘[]’, ‘apply p0 (M (0 :num))’,
+                                ‘apply p0 (M (i :num))’]) \\
+     simp [MEM_MAP] \\
      impl_tac
      >- (CONJ_TAC >| (* 2 subgoals *)
          [ (* goal 1 (of 2) *)
            Q.EXISTS_TAC ‘M 0’ >> simp [MEM_EL] \\
-           Q.EXISTS_TAC ‘0’ >> rw [],
+           Q.EXISTS_TAC ‘0’ >> art [],
            (* goal 2 (of 2) *)
            Q.EXISTS_TAC ‘M i’ >> simp [MEM_EL] \\
-           Q.EXISTS_TAC ‘i’ >> rw [] ]) \\
-     Know ‘BT' X (apply p0 (M 0)) r = BT' X (M1 0) r’
-     >- (SIMP_TAC std_ss [Once EQ_SYM_EQ, Abbr ‘M1’] \\
-         MATCH_MP_TAC BT_of_principal_hnf >> simp []) >> Rewr' \\
-     Know ‘BT' X (apply p0 (M i)) r = BT' X (M1 i) r’
-     >- (SIMP_TAC std_ss [Once EQ_SYM_EQ, Abbr ‘M1’] \\
-         MATCH_MP_TAC BT_of_principal_hnf >> simp []) >> Rewr' \\
-     REWRITE_TAC [BT_def] \\
-     NTAC 2 (simp [Once ltree_unfold, BT_generator_def, LMAP_fromList,
-                   ltree_el_def]) \\
-     simp [head_equivalent_def])
+           Q.EXISTS_TAC ‘i’ >> art [] ]) \\
+     Know ‘equivalent (apply p0 (M 0)) (apply p0 (M i)) <=>
+           equivalent2 X (apply p0 (M 0)) (apply p0 (M i)) r’
+     >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm >> simp []) >> Rewr' \\
+     simp [equivalent2_def])
+ (* stage work *)
  >> simp [EXT_SKOLEM_THM']
  >> STRIP_TAC (* this assert f as the children function of all Ms *)
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> ?y Ns. _’ K_TAC
  >> Know ‘Ns = f 0’ (* eliminate Ns by f *)
  >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [])
  >> DISCH_THEN (FULL_SIMP_TAC std_ss o wrap)
- >> ‘!i. i < k ==> solvable (apply p0 (M i))’ by PROVE_TAC []
- >> Q.PAT_X_ASSUM ‘!i. i < k ==> solvable (apply p0 (M i)) /\ _’ K_TAC
  >> Know ‘!i. i < k ==> apply p0 (M i) -h->* VAR y @* f i’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> M1 i = VAR y @* f i /\ _’ drule \\
      simp [Abbr ‘M1’, principal_hnf_thm'])
  >> DISCH_TAC
+ >> cheat
+ (* TODO
  (* Now we use ‘h::p IN BT_paths (apply p0 (M i))’ (and ‘M 0’) to show that
    ‘h < m’, as otherwise p1 (the selector) cannot be properly defined.
   *)
