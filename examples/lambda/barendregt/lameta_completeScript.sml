@@ -4453,6 +4453,45 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
+Theorem hreduce_equivalent_cong :
+    !M N M0 N0. M -h->* M0 /\ N -h->* N0 ==>
+               (equivalent M N <=> equivalent M0 N0)
+Proof
+    rpt STRIP_TAC
+ >> ‘M == M0 /\ N == N0’ by PROVE_TAC [hreduces_lameq]
+ >> reverse (Cases_on ‘solvable M’)
+ >- (‘unsolvable M0’ by PROVE_TAC [lameq_solvable_cong] \\
+     Cases_on ‘solvable N’
+     >- (‘solvable N0’ by PROVE_TAC [lameq_solvable_cong] \\
+         simp [equivalent_def]) \\
+    ‘unsolvable N0’ by PROVE_TAC [lameq_solvable_cong] \\
+     simp [equivalent_def])
+ >> ‘solvable M0’ by PROVE_TAC [lameq_solvable_cong]
+ >> reverse (Cases_on ‘solvable N’)
+ >- (‘unsolvable N0’ by PROVE_TAC [lameq_solvable_cong] \\
+     Cases_on ‘solvable M’
+     >- (‘solvable M0’ by PROVE_TAC [lameq_solvable_cong] \\
+         simp [equivalent_def]) \\
+    ‘unsolvable M0’ by PROVE_TAC [lameq_solvable_cong] \\
+     simp [equivalent_def])
+ >> ‘solvable N0’ by PROVE_TAC [lameq_solvable_cong]
+ >> ‘principal_hnf M = principal_hnf M0 /\
+     principal_hnf N = principal_hnf N0’ by PROVE_TAC [principal_hnf_hreduce]
+ >> qabbrev_tac ‘X = FV M UNION FV N’
+ >> ‘FINITE X’ by rw [Abbr ‘X’]
+ >> Know ‘equivalent M N = equivalent2 X M N 1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm >> simp [] \\
+     ASM_SET_TAC [])
+ >> Rewr'
+ >> Know ‘equivalent M0 N0 = equivalent2 X M0 N0 1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm >> simp [] \\
+    ‘FV M0 SUBSET FV M /\ FV N0 SUBSET FV N’
+       by PROVE_TAC [hreduce_FV_SUBSET] \\
+     ASM_SET_TAC [])
+ >> Rewr'
+ >> simp [equivalent2_of_solvables]
+QED
+
 (* A more general definition (but many existing hard proofs are still
    using the above “equivalent”).
  *)
