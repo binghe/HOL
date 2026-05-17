@@ -7699,8 +7699,8 @@ Theorem vsubterm_agree_upto_lemma :
                  (vsubterm X M q r = NONE <=>
                   vsubterm X (apply pi M) q r = NONE)) /\
            (!q M. MEM M Ms /\ q <<= p /\ vsubterm X M q r <> NONE ==>
-               (solvable (vsubterm' X M q r) <=>
-                solvable (vsubterm' X (apply pi M) q r))) /\
+                 (solvable (vsubterm' X M q r) <=>
+                  solvable (vsubterm' X (apply pi M) q r))) /\
            (!M N. MEM M Ms /\ MEM N Ms /\ vsubterm X M p r <> NONE /\
                   vsubterm X N p r <> NONE ==>
                  (equivalent (vsubterm' X M p r) (vsubterm' X N p r) <=>
@@ -8055,12 +8055,76 @@ Proof
  >- (rw [MEM_MAP] \\
      Q.EXISTS_TAC ‘M i’ >> simp [EL_MEM, Abbr ‘M’])
  >> DISCH_TAC
+ (* extra goal: NONE ==> NONE *)
+ >> CONJ_ASM1_TAC
+ >- (qx_genl_tac [‘t1’, ‘t2’] >> STRIP_TAC \\
+     POP_ASSUM MP_TAC >> simp [] \\
+     NTAC 2 (POP_ASSUM MP_TAC) >> simp [MEM_EL] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘a’ STRIP_ASSUME_TAC) \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘b’ STRIP_ASSUME_TAC) \\
+     Q.PAT_X_ASSUM ‘t1 = _’ (REWRITE_TAC o wrap) \\
+     Q.PAT_X_ASSUM ‘t2 = _’ (REWRITE_TAC o wrap) \\
+     simp [vsubterm_def] \\
+     Cases_on ‘p = []’ >- simp [] \\
+     Know ‘vsubterm X (EL h (f a)) p (SUC r) =
+           vsubterm X (apply pi' (M a)) p (SUC r)’
+     >- (SYM_TAC >> MATCH_MP_TAC hreduce_vsubterm_cong >> simp []) >> Rewr' \\
+     Know ‘vsubterm X (EL h (f b)) p (SUC r) =
+           vsubterm X (apply pi' (M b)) p (SUC r)’
+     >- (SYM_TAC >> MATCH_MP_TAC hreduce_vsubterm_cong >> simp []) >> Rewr' \\
+     DISCH_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘apply pi' (M a)’ >> simp [MEM_MAP])
+ (* refine last assumption *)
+ >> Know ‘!M N. MEM M Ms /\ MEM N Ms /\
+                vsubterm X (apply p0 M) (h::p) r = NONE ==>
+                vsubterm X (apply p0 N) (h::p) r = NONE’
+ >- (qx_genl_tac [‘t1’, ‘t2’ ] >> STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘t1’ >> simp [])
+ >> POP_ASSUM K_TAC
+ >> DISCH_TAC
+ >> Know ‘!M N. MEM M Ms /\ MEM N Ms ==>
+               (vsubterm X (apply p0 M) (h::p) r = NONE <=>
+                vsubterm X (apply p0 N) (h::p) r = NONE)’ >- PROVE_TAC []
+ >> POP_ASSUM K_TAC
+ >> DISCH_TAC
+ (* goal: solvable <=> solvable *)
+ >> CONJ_ASM1_TAC
+ >- (Q.X_GEN_TAC ‘N’ >> simp [MEM_EL] >> STRIP_TAC \\
+     POP_ASSUM MP_TAC >> POP_ORW \\
+     DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!q M. MEM M Ms /\ q <<= h::p ==>
+                         (vsubterm X M q r = NONE <=> _)’
+                   (MP_TAC o Q.SPECL [‘h::p’, ‘M (n :num)’]) >> simp [EL_MEM] \\
+     impl_tac >- simp [Abbr ‘M’, EL_MEM] \\
+     DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!M. MEM M (apply pi' Ms) /\ _ ==>
+                       (solvable (vsubterm' X M p (SUC r)) <=> _)’
+                   (MP_TAC o Q.SPEC ‘apply pi' (M (n :num))’) \\
+     impl_tac
+     >- (CONJ_TAC >- simp [EL_MEM, Abbr ‘M’] \\
+         Cases_on ‘p = []’ >- simp [] \\
+         Know ‘vsubterm X (apply pi' (M n)) p (SUC r) =
+               vsubterm X (EL h (f n)) p (SUC r)’
+         >- (MATCH_MP_TAC hreduce_vsubterm_cong >> simp []) >> Rewr' \\
+         Q.PAT_X_ASSUM ‘vsubterm X (apply p0 (M n)) (h::p) r <> NONE’ MP_TAC \\
+         simp [vsubterm_def]) \\
+     DISCH_THEN (REWRITE_TAC o wrap o SYM) \\
+     simp [vsubterm_def] \\
+     reverse (Cases_on ‘p = []’)
+     >- (Know ‘vsubterm X (apply pi' (M n)) p (SUC r) =
+               vsubterm X (EL h (f n)) p (SUC r)’
+         >- (MATCH_MP_TAC hreduce_vsubterm_cong >> simp []) >> Rewr) \\
+     simp [] \\
+     MATCH_MP_TAC lameq_solvable_cong \\
+     MATCH_MP_TAC lameq_SYM \\
+     simp [hreduces_lameq])
+ (* goal: equivalent <=> equivalent *)
+ >> qx_genl_tac [‘t1’, ‘t2’] >> STRIP_TAC
+ >> POP_ASSUM MP_TAC >> simp []
  >> cheat
- (*
- (* stage work, the 2nd part is easier following textbook *)
- >> reverse CONJ_TAC
- >- (qx_genl_tac [‘t1’, ‘t2’] (* temporary names, to be consumed soon *) \\
-     simp [MEM_EL] \\
+ (* TODO
      ONCE_REWRITE_TAC [TAUT ‘P /\ Q /\ p1 /\ p2 ==> R <=>
                              P ==> Q ==> p1 /\ p2 ==> R’] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘a’ STRIP_ASSUME_TAC) \\
