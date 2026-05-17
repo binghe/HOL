@@ -3400,13 +3400,22 @@ QED
      equivalent (vsubterm' X M q r) (vsubterm' X N q r) <=>
      equivalent (vsubterm' X (apply pi M) q r)
                 (vsubterm' X (apply pi N) q r)
+
+   NOTE: “apply pi M” have bigger (or equal) Boehm tree than “M” (MEM M Ms), but
+   it's not true that “p IN ltree_paths (BT' X (apply pi M) p r)”, in other word
+   “subterm X (apply pi M) p r <> NONE”). However, it's true that “h < m”, i.e.,
+   “HD p < hnf_children_size (principal_hnf (apply pi M)”, that is equivalent to
+   “subterm X (apply pi M) [HD p] r <> NONE”. This is important for the selector
+   in [agree_upto_thm] to work.
  *)
 Theorem vsubterm_equivalent_lemma :
     !X Ms p r pi.
            FINITE X /\ p <> [] /\ 0 < r /\
            BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r /\
            pi = Boehm_construction' X Ms p /\ EVERY solvable Ms
-      ==> (!M. MEM M Ms ==> is_ready' (apply pi M)) /\
+      ==> (!M. MEM M Ms ==>
+               is_ready' (apply pi M) /\
+               HD p < hnf_children_size (principal_hnf (apply pi M))) /\
           (!q M. MEM M Ms /\ q <<= p ==>
                 (vsubterm X M q r = NONE <=>
                  vsubterm X (apply pi M) q r = NONE)) /\
@@ -4059,6 +4068,16 @@ Proof
      DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) >> POP_ORW \\
   (* now expanding ‘is_ready’ using [is_ready_alt] *)
      ASM_SIMP_TAC std_ss [is_ready_alt'] \\
+  (* extra goal: HD p < hnf_children_size (principal_hnf (apply pi M)) *)
+     reverse CONJ_TAC
+     >- (simp [hnf_children_size_thm, GSYM appstar_APPEND] \\
+         Suff ‘HD p < LENGTH (Ns i)’ >- simp [] \\
+         simp [Abbr ‘Ns’, LENGTH_TAKE] \\
+         simp [Abbr ‘d_max'’, Abbr ‘d_max’] \\
+         Suff ‘HD p < d’ >- simp [] \\
+         Q_TAC (TRANS_TAC LET_TRANS) ‘MAX_LIST p’ >> art [] \\
+         MATCH_MP_TAC MAX_LIST_PROPERTY \\
+         MATCH_MP_TAC HEAD_MEM >> art []) \\
      qexistsl_tac [‘b i’, ‘Ns i ++ tl i’] \\
   (* subgoal: apply pi (M i) -h->* VAR (b i) @* (Ns i ++ tl i) *)
      CONJ_TAC
@@ -4210,7 +4229,7 @@ Proof
     ‘b i = EL (j i) xs’ by rw [] >> POP_ORW \\
      SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
      Suff ‘EL (j i) xs = EL a' xs <=> j i = a'’ >- rw [] \\
-     MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
+     MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> simp [])
  (* cleanup *)
  >> Q.PAT_X_ASSUM ‘Boehm_transform p1’            K_TAC
  >> Q.PAT_X_ASSUM ‘Boehm_transform p2’            K_TAC
@@ -7534,6 +7553,8 @@ Theorem vsubterm_equivalent_lemma' :
            BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r ==>
       ?pi. Boehm_transform pi /\
           (!M. MEM M Ms ==> is_ready (apply pi M)) /\
+          (!M. MEM M Ms /\ solvable (apply pi M) ==>
+               HD p < hnf_children_size (principal_hnf (apply pi M))) /\
           (!M. MEM M Ms ==> FV (apply pi M) SUBSET X UNION RANK r) /\
           (!q M. MEM M Ms /\ q <<= p ==>
                 (vsubterm X M q r = NONE <=>
@@ -7555,7 +7576,8 @@ Proof
  >- (Q.EXISTS_TAC ‘[]’ >> simp [] \\
      POP_ASSUM (STRIP_ASSUME_TAC o SRULE [EVERY_MEM]) \\
      simp [is_ready_def] \\
-     fs [BIGUNION_IMAGE_SUBSET])
+     fs [BIGUNION_IMAGE_SUBSET] \\
+     rpt STRIP_TAC >> PROVE_TAC [])
  (* applying solvable_apply_imp *)
  >> fs [o_DEF, SF ETA_ss]
  >> qabbrev_tac ‘Ms' = FILTER solvable Ms’
@@ -7570,8 +7592,8 @@ Proof
      rw [Abbr ‘Ms'’, MEM_FILTER])
  >> DISCH_TAC
  >> qabbrev_tac ‘pi' = Boehm_construction' X Ms' p’
- >> MP_TAC (Q.SPECL [‘X’, ‘Ms'’, ‘p’, ‘r’, ‘pi'’] vsubterm_equivalent_lemma)
- >> rw []
+ >> MP_TAC (Q.SPECL [‘X’, ‘Ms'’, ‘p’, ‘r’, ‘pi'’]
+                    vsubterm_equivalent_lemma) >> rw []
  >> Q.EXISTS_TAC ‘pi'’
  >> CONJ_ASM1_TAC >- simp [Abbr ‘pi'’, Boehm_construction_transform']
  >> CONJ_TAC
@@ -7580,8 +7602,15 @@ Proof
      >- (‘unsolvable (apply pi' M)’ by simp [unsolvable_apply] \\
          simp [is_ready_def]) \\
     ‘MEM M Ms'’ by simp [Abbr ‘Ms'’, MEM_FILTER] \\
-     Q.PAT_X_ASSUM ‘!M. MEM M Ms' ==> is_ready' (apply pi' M)’
+     Q.PAT_X_ASSUM ‘!M. MEM M Ms' ==> is_ready' (apply pi' M) /\ _’
        (MP_TAC o Q.SPEC ‘M’) >> rw [is_ready'])
+ (* extra goal *)
+ >> CONJ_TAC
+ >- (rpt STRIP_TAC \\
+     reverse (Cases_on ‘solvable M’) >- PROVE_TAC [unsolvable_apply] \\
+    ‘MEM M Ms'’ by simp [Abbr ‘Ms'’, MEM_FILTER] \\
+     Q.PAT_X_ASSUM ‘!M. MEM M Ms' ==> is_ready' (apply pi' M) /\ _’
+       (MP_TAC o Q.SPEC ‘M’) >> rw [])
  >> CONJ_TAC
  >- (rw [Abbr ‘pi'’] \\
      irule FV_apply_Boehm_construction' >> art [] \\
