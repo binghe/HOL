@@ -4499,6 +4499,67 @@ Proof
  >> PROVE_TAC []
 QED
 
+Theorem equivalent2_trans :
+    !X t1 t2 t3 r. equivalent2 X t1 t2 r /\ equivalent2 X t2 t3 r ==>
+                   equivalent2 X t1 t3 r
+Proof
+    rpt STRIP_TAC
+ >> reverse (Cases_on ‘solvable t1’)
+ >- (Know ‘unsolvable t2’
+     >- (CCONTR_TAC >> fs [equivalent2_def]) >> DISCH_TAC \\
+     Know ‘unsolvable t3’
+     >- (CCONTR_TAC >> fs [equivalent2_def]) >> DISCH_TAC \\
+     simp [equivalent2_def])
+ >> Know ‘solvable t2’
+ >- (CCONTR_TAC >> fs [equivalent2_def])
+ >> DISCH_TAC
+ >> Know ‘solvable t3’
+ >- (CCONTR_TAC >> fs [equivalent2_def])
+ >> DISCH_TAC
+ >> NTAC 2 (Q.PAT_X_ASSUM ‘equivalent2 X _ _ r’ MP_TAC)
+ >> UNBETA_TAC [equivalent2_def] “equivalent2 X t1 t2 r”
+ >> unbeta_tac [equivalent2_def] “equivalent2 X t2 t3 r”
+ >> qabbrev_tac ‘P0 = principal_hnf t3’
+ >> qabbrev_tac ‘n3 = LAMl_size P0’
+ >> qabbrev_tac ‘vs3 = RNEWS r n3 X’
+ >> qabbrev_tac ‘P1 = principal_hnf (P0 @* MAP VAR vs3)’
+ >> qabbrev_tac ‘y3 = hnf_head P1’
+ >> qabbrev_tac ‘m3 = LENGTH (hnf_children P1)’
+ >> unbeta_tac [equivalent2_def] “equivalent2 X t1 t3 r”
+ >> NTAC 2 STRIP_TAC
+ >> Know ‘n1 + m2 + (n2 + m3) = n2 + m1 + (m2 + n3)’ >- simp []
+ >> simp []
+QED
+
+Theorem equivalent_trans :
+    !M1 M2 M3. equivalent M1 M2 /\ equivalent M2 M3 ==> equivalent M1 M3
+Proof
+    rpt GEN_TAC
+ >> qabbrev_tac ‘X = FV M1 UNION FV M2 UNION FV M3’
+ >> ‘FINITE X’ by simp [Abbr ‘X’]
+ >> ‘FV M1 SUBSET X UNION RANK 1 /\
+     FV M2 SUBSET X UNION RANK 1 /\
+     FV M3 SUBSET X UNION RANK 1’ by ASM_SET_TAC []
+ >> Know ‘equivalent M1 M2 = equivalent2 X M1 M2 1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm >> simp [])
+ >> Rewr'
+ >> Know ‘equivalent M2 M3 = equivalent2 X M2 M3 1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm >> simp [])
+ >> Rewr'
+ >> Know ‘equivalent M1 M3 = equivalent2 X M1 M3 1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm >> simp [])
+ >> Rewr'
+ >> REWRITE_TAC [equivalent2_trans]
+QED
+
+Theorem equivalence_equivalent :
+    equivalence equivalent
+Proof
+    rw [equivalence_def, reflexive_def, symmetric_def, transitive_def,
+        equivalent_refl, Once equivalent_comm]
+ >> Q_TAC (TRANS_TAC equivalent_trans) ‘y’ >> art []
+QED
+
 Theorem equivalent_alt_equivalent2 :
     !M N. equivalent M N <=> equivalent2 (FV M UNION FV N) M N 0
 Proof

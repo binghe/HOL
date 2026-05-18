@@ -3403,46 +3403,56 @@ Proof
  >> qexistsl_tac [‘d’, ‘y’, ‘k’] >> art []
 QED
 
-(* NOTE: In [subtree_equiv_lemma], “subtree_equiv X M N q r” is equivalent to
+(* NOTE: In [subtree_equiv_lemma], “subtree_equiv X M N q r”, is equivalent with
 
      equivalent (subterm' X M q r) (subterm' X N q r)
 
-   to avoid accessing their Boehm trees. Then we try to prove this HUGE lemma
-   for vsubterm:
+   by [subtree_equiv_alt_equivalent_subterm], to avoid accessing their BT. Then,
+   we try to prove the same conclusion (4) using vsubterm instead:
 
      equivalent (vsubterm' X M q r) (vsubterm' X N q r) <=>
      equivalent (vsubterm' X (apply pi M) q r)
                 (vsubterm' X (apply pi N) q r)
 
-   NOTE: “apply pi M” have bigger (or equal) Boehm tree than “M” (MEM M Ms), but
-   it's not true that “p IN ltree_paths (BT' X (apply pi M) p r)”, in other word
-   “subterm X (apply pi M) p r <> NONE”). However, it's true that “h < m”, i.e.,
-   “HD p < hnf_children_size (principal_hnf (apply pi M)”, that is equivalent to
-   “subterm X (apply pi M) [HD p] r <> NONE”. This is important for the selector
-   in [agree_upto_thm] to work.
+   NOTE: Adding the following conclusion (1):
+
+    (*1*) (!q M. MEM M Ms /\ q <<= p ==>
+                (subterm X M q r <> NONE ==>
+                 subterm X (apply pi M) q r <> NONE)) /\
+
+   to show the BT paths of “apply pi M” is greater-or-equal than the one of “M”.
+   This conclusion is useful when proving [subtree_equiv_lemma] as a corollary.
+
+   NOTE: Although “apply pi M” has a greater-or-equal Boehm tree than BT of “M”,
+   it's not true arbitrary p as a virtual path is inside BT of “apply pi M”: the
+   tree structure can only be "preserved" by the permutator (and other stuff) in
+   the Boehm transform. However, arbitrary p is for sure covered by the children
+   of BT root node: “HD p < hnf_children_size (principal_hnf (apply pi M)”, that
+   is equivalent to “subterm X (apply pi M) [HD p] r <> NONE”. This is important
+   for the selector in [agree_upto_thm] to work.
  *)
 Theorem vsubterm_equivalent_lemma :
     !X Ms p r pi.
            FINITE X /\ p <> [] /\ 0 < r /\
            BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r /\
-           pi = Boehm_construction' X Ms p /\ EVERY solvable Ms
-      ==> (!M. MEM M Ms ==>
+           pi = Boehm_construction' X Ms p /\ EVERY solvable Ms ==>
+    (*0*) (!M. MEM M Ms ==>
                is_ready' (apply pi M) /\
                HD p < hnf_children_size (principal_hnf (apply pi M))) /\
-          (!q M. MEM M Ms /\ q <<= p ==>
+    (*2*) (!q M. MEM M Ms /\ q <<= p ==>
                 (vsubterm X M q r = NONE <=>
                  vsubterm X (apply pi M) q r = NONE)) /\
-          (!q M. MEM M Ms /\ q <<= p /\
+    (*3*) (!q M. MEM M Ms /\ q <<= p /\
                  vsubterm X M q r <> NONE ==>
                 (solvable (vsubterm' X M q r) <=>
                  solvable (vsubterm' X (apply pi M) q r))) /\
-           !q M N. MEM M Ms /\ MEM N Ms /\ q <<= p /\
+    (*4*) (!q M N. MEM M Ms /\ MEM N Ms /\ q <<= p /\
                    vsubterm X M q r <> NONE /\
                    vsubterm X N q r <> NONE ==>
                   (equivalent (vsubterm' X M q r)
                               (vsubterm' X N q r) <=>
                    equivalent (vsubterm' X (apply pi M) q r)
-                              (vsubterm' X (apply pi N) q r))
+                              (vsubterm' X (apply pi N) q r)))
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> Q.PAT_X_ASSUM ‘pi = _’ (REWRITE_TAC o wrap)
@@ -8176,6 +8186,19 @@ Proof
      >- (MATCH_MP_TAC hreduce_vsubterm_cong >> simp []) >> Rewr)
  >> simp [Abbr ‘t1’, Abbr ‘t2’]
  >> SYM_TAC >> MATCH_MP_TAC hreduce_equivalent_cong >> simp []
+QED
+
+Theorem subtree_equiv_alt_equivalent_vsubterm :
+    !X M N p r. FINITE X /\ 0 < r /\
+                FV M SUBSET X UNION RANK r /\
+                FV N SUBSET X UNION RANK r /\
+                subterm X M p r <> NONE /\
+                subterm X N p r <> NONE ==>
+               (subtree_equiv X M N p r <=>
+                equivalent (vsubterm' X M p r) (vsubterm' X N p r))
+Proof
+    RW_TAC std_ss [vsubterm_alt_subterm]
+ >> MATCH_MP_TAC subtree_equiv_alt_equivalent_subterm >> art []
 QED
 
 (* END *)
