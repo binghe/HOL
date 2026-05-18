@@ -5063,6 +5063,10 @@ Proof
     rw [equivalent2_def]
 QED
 
+(*---------------------------------------------------------------------------*
+ *  subtree_equiv and equivalent (of subterm)
+ *---------------------------------------------------------------------------*)
+
 Theorem subtree_equiv_alt_equivalent2 :
     !X M N r. FINITE X /\
               FV M SUBSET X UNION RANK r /\
@@ -5134,6 +5138,48 @@ Proof
     rpt STRIP_TAC
  >> ASM_SIMP_TAC std_ss [subtree_equiv_alt_equivalent2]
  >> MATCH_MP_TAC equivalent2_thm >> art []
+QED
+
+Theorem subtree_equiv_alt_equivalent_subterm :
+    !X M N p r. FINITE X /\ 0 < r /\
+                FV M SUBSET X UNION RANK r /\
+                FV N SUBSET X UNION RANK r /\
+                subterm X M p r <> NONE /\
+                subterm X N p r <> NONE ==>
+               (subtree_equiv X M N p r <=>
+                equivalent (subterm' X M p r) (subterm' X N p r))
+Proof
+    rpt STRIP_TAC
+ >> NTAC 5 (POP_ASSUM MP_TAC)
+ >> qid_specl_tac [‘p’, ‘M’, ‘N’, ‘r’]
+ >> Induct_on ‘p’
+ >- rw [subtree_equiv_alt_equivalent]
+ (* stage work *)
+ >> rpt STRIP_TAC
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> UNBETA_TAC [subterm_def] “subterm X M (h::p) r”
+ >> UNBETA_TAC [subterm_def] “subterm X N (h::p) r”
+ >> NTAC 2 STRIP_TAC
+ >> Know ‘FV (EL h Ms) SUBSET X UNION RANK (SUC r)’
+ >- (MATCH_MP_TAC subterm_induction_lemma' \\
+     qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp [] \\
+     simp [Abbr ‘m’, Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC hnf_children_size_alt \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> simp [])
+ >> DISCH_TAC
+ >> Know ‘FV (EL h Ms') SUBSET X UNION RANK (SUC r)’
+ >- (MATCH_MP_TAC subterm_induction_lemma' \\
+     qexistsl_tac [‘N’, ‘M0'’, ‘n'’, ‘m'’, ‘vs'’, ‘M1'’] >> simp [] \\
+     simp [Abbr ‘m'’, Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC hnf_children_size_alt \\
+     qexistsl_tac [‘X’, ‘N’, ‘r’, ‘n'’, ‘vs'’, ‘M1'’] >> simp [])
+ >> DISCH_TAC
+ >> fs [subtree_equiv_def]
+ >> unbeta_tac [BT_def, Once ltree_unfold, BT_generator_def] “BT' X M r”
+ >> unbeta_tac [BT_def, Once ltree_unfold, BT_generator_def] “BT' X N r”
+ >> simp [GSYM BT_def, LMAP_fromList]
+ >> simp [ltree_el_def, head_equivalent_def]
+ >> simp [LNTH_fromList, EL_MAP]
 QED
 
 (*---------------------------------------------------------------------------*
