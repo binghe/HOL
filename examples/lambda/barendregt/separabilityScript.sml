@@ -744,6 +744,131 @@ Proof
       numLib.ARITH_TAC ]
 QED
 
+Theorem lameta_imp_equivalent2 :
+    !X M N r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                          FV N SUBSET X UNION RANK r /\ M === N
+          ==> equivalent2 X M N r
+Proof
+    rpt STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- (‘unsolvable N’ by PROVE_TAC [lameta_solvable_cong] \\
+     simp [equivalent2_def])
+ >> ‘solvable N’ by PROVE_TAC [lameta_solvable_cong]
+ >> UNBETA_TAC [equivalent2_def] “equivalent2 X M N r”
+ (* stage work *)
+ >> Know ‘M0 === N0’
+ >- (Q_TAC (TRANS_TAC lameta_TRANS) ‘M’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC lameq_imp_lameta \\
+         qunabbrev_tac ‘M0’ \\
+         MATCH_MP_TAC lameq_principal_hnf' >> art []) \\
+     Q_TAC (TRANS_TAC lameta_TRANS) ‘N’ >> art [] \\
+     MATCH_MP_TAC lameq_imp_lameta \\
+     qunabbrev_tac ‘N0’ \\
+     MATCH_MP_TAC lameq_SYM \\
+     MATCH_MP_TAC lameq_principal_hnf' >> art [])
+ >> DISCH_TAC
+ >> ‘?Z. M0 -be->* Z /\ N0 -be->* Z’ by METIS_TAC [lameta_CR]
+ (*
+    M -h->* M0 -be->*
+    |       |        \
+   ===     ===        Z
+    |       |        /
+    N -h->* N0 -be->*
+  *)
+ >> qunabbrev_tac ‘vs1’
+ >> Q_TAC (RNEWS_TAC (“vs1 :string list”, “r :num”, “n1 :num”)) ‘X’
+ >> ‘DISJOINT (set vs1) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma']
+ >> qunabbrev_tac ‘y1’
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs1 :string list”,
+                    “y1 :string”, “args1 :term list”)) ‘M1’
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV M0)’ K_TAC
+ >> ‘TAKE (LAMl_size M0) vs1 = vs1’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ (* repeat above steps for the other part *)
+ >> qunabbrev_tac ‘vs2’
+ >> Q_TAC (RNEWS_TAC (“vs2 :string list”, “r :num”, “n2 :num”)) ‘X’
+ >> ‘DISJOINT (set vs2) (FV N0)’ by METIS_TAC [subterm_disjoint_lemma']
+ >> qunabbrev_tac ‘y2’
+ >> Q_TAC (HNF_TAC (“N0 :term”, “vs2 :string list”,
+                    “y2 :string”, “args2 :term list”)) ‘N1’
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (FV N0)’ K_TAC
+ >> ‘TAKE (LAMl_size N0) vs2 = vs2’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ (* eliminating Ms and Ms' *)
+ >> simp [Abbr ‘m1’, Abbr ‘m2’]
+ >> qabbrev_tac ‘m1 = LENGTH args1’
+ >> qabbrev_tac ‘m2 = LENGTH args2’
+ >> Q.PAT_X_ASSUM ‘M0 = _’ (ASSUME_TAC o SYM)
+ >> Q.PAT_X_ASSUM ‘N0 = _’ (ASSUME_TAC o SYM)
+ (* applying hnf_bestar_cases *)
+ >> MP_TAC (Q.SPECL [‘vs1’, ‘y1’, ‘args1’, ‘Z’] hnf_bestar_cases) >> simp []
+ >> DISCH_THEN (qx_choosel_then [‘i1’, ‘Ns1’] STRIP_ASSUME_TAC)
+ >> Q.PAT_X_ASSUM ‘Z = _’ (ASSUME_TAC o SYM)
+ >> MP_TAC (Q.SPECL [‘vs2’, ‘y2’, ‘args2’, ‘Z’] hnf_bestar_cases) >> simp []
+ >> DISCH_THEN (qx_choosel_then [‘i2’, ‘Ns2’] STRIP_ASSUME_TAC)
+ >> Q.PAT_X_ASSUM ‘Z = _’ (ASSUME_TAC o SYM)
+ (*
+    M -h->* M0 -be->*
+    |       |        \
+   ===     ===        Z
+    |       |        /
+    N -h->* M0'-be->*
+
+   M0 = LAMl vs1 (VAR y1 @* args1)
+   Z  = LAMl (TAKE (n1 - i1) vs1) (VAR y1 @* (TAKE (m1 - i1) Ns1)
+   Z  = LAMl (TAKE (n2 - i2) vs2) (VAR y2 @* (TAKE (m2 - i2) Ns2)
+   N0 = LAMl vs2 (VAR y2 @* args2)
+ *)
+ >> Know ‘n2 - i2 = n1 - i1’
+ >- (Q.PAT_X_ASSUM ‘_ = Z’ (MP_TAC o AP_TERM “LAMl_size”) \\
+     REWRITE_TAC [LAMl_size_hnf] \\
+     simp [LENGTH_BUTLASTN] >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘_ = Z’ (MP_TAC o AP_TERM “LAMl_size”) \\
+     REWRITE_TAC [LAMl_size_hnf] \\
+     simp [LENGTH_BUTLASTN])
+ >> DISCH_TAC
+ (* stage work *)
+ >> gs [BUTLASTN_TAKE_UNCOND, LASTN_DROP_UNCOND]
+ >> qabbrev_tac ‘n_max = MAX n1 n2’
+ >> ‘n1 <= n_max /\ n2 <= n_max’ by simp [Abbr ‘n_max’]
+ >> Q_TAC (RNEWS_TAC (“xs :string list”, “r :num”, “n_max :num”)) ‘X’
+ (* applying TAKE_RNEWS (and TAKE_TAKE) *)
+ >> Know ‘TAKE (n1 - i1) vs1 = TAKE (n1 - i1) xs’
+ >- (‘vs1 = TAKE n1 xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+     irule TAKE_TAKE >> simp [])
+ >> DISCH_THEN (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘LAMl (TAKE (n1 - i1) vs2) _ = Z’ MP_TAC
+ >> Know ‘TAKE (n1 - i1) vs2 = TAKE (n1 - i1) xs’
+ >- (Q.PAT_X_ASSUM ‘n2 - i2 = n1 - i1’ (REWRITE_TAC o wrap o SYM) \\
+    ‘vs2 = TAKE n2 xs’ by METIS_TAC [TAKE_RNEWS] >> POP_ORW \\
+     irule TAKE_TAKE >> simp [])
+ >> Rewr'
+ (* “y1 = y2” is proved here *)
+ >> Q.PAT_X_ASSUM ‘LAMl (TAKE (n1 - i1) xs) _ = Z’ (simp o wrap o SYM)
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘y2 = y1’ (fs o wrap)
+ >> Know ‘m2 - i2 = m1 - i1’
+ >- (POP_ASSUM (MP_TAC o AP_TERM “LENGTH :term list -> num”) \\
+     simp [])
+ >> DISCH_TAC
+ >> simp []
+QED
+
+Theorem lameta_imp_equivalent :
+    !M N. M === N ==> equivalent M N
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘X = FV M UNION FV N’
+ >> ‘FINITE X’ by (rw [Abbr ‘X’] >> simp [])
+ >> Know ‘equivalent M N <=> equivalent2 X M N 1’
+ >- (SYM_TAC >> MATCH_MP_TAC equivalent2_thm \\
+     simp [Abbr ‘X’] >> SET_TAC [])
+ >> Rewr'
+ >> MATCH_MP_TAC lameta_imp_equivalent2 >> art []
+ >> simp [Abbr ‘X’] >> SET_TAC []
+QED
+
 Theorem vsubterm_solvable_bnf :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M ==>
               vsubterm X M p r <> NONE /\ solvable (vsubterm' X M p r)
@@ -8371,11 +8496,27 @@ Proof
      MATCH_MP_TAC lameta_SYM >> art [])
  >> DISCH_TAC
  (* applying lameta_imp_equivalent *)
- >> ‘~equivalent (vsubterm' X M p r) (vsubterm' X N p r)’
-      by cheat
- >> ‘!q. q <<= p /\ q <> p ==>
-         equivalent (vsubterm' X M q r) (vsubterm' X N q r)’
-      by cheat
+ >> Know ‘~equivalent (vsubterm' X M p r) (vsubterm' X N p r)’
+ >- (CCONTR_TAC >> fs [] \\
+     Suff ‘equivalent (vsubterm' X M' p r) (vsubterm' X N' p r)’ >- simp [] \\
+     TRANS_TAC equivalent_trans “vsubterm' X M p r” \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC lameta_imp_equivalent >> simp []) \\
+     TRANS_TAC equivalent_trans “vsubterm' X N p r” >> art [] \\
+     MATCH_MP_TAC lameta_imp_equivalent \\
+     MATCH_MP_TAC lameta_SYM >> simp [])
+ >> DISCH_TAC
+ >> Know ‘!q. q <<= p /\ q <> p ==>
+              equivalent (vsubterm' X M q r) (vsubterm' X N q r)’
+ >- (rpt STRIP_TAC \\
+    ‘equivalent (vsubterm' X M' q r) (vsubterm' X N' q r)’ by simp [] \\
+     TRANS_TAC equivalent_trans “vsubterm' X M' q r” \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC lameta_imp_equivalent \\
+         MATCH_MP_TAC lameta_SYM >> simp []) \\
+     TRANS_TAC equivalent_trans “vsubterm' X N' q r” >> simp [] \\
+     MATCH_MP_TAC lameta_imp_equivalent >> simp [])
+ >> DISCH_TAC
  (* applying vsubterm_agree_upto_two_has_bnf *)
  >> ‘vsubterm_agree_upto X [M; N] p r’ by simp [vsubterm_agree_upto_two_has_bnf]
  >> MP_TAC (Q.SPECL [‘X’, ‘[M; N]’, ‘p’, ‘r’] vsubterm_agree_upto_thm)
