@@ -4453,15 +4453,13 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
+(* NOTE: This rule is taken from CCS examples (WEAK_EQUIV) *)
 val _ = add_rule { block_style = (AroundEachPhrase, (PP.CONSISTENT, 0)),
                    fixity = Infix (NONASSOC, 450),
                    paren_style = OnlyIfNecessary,
                    pp_elements = [HardSpace 1, TOK (UTF8.chr 0x2248),
                                   BreakSpace (1,0)],
                    term_name = "equivalent" };
-
-val _ = TeX_notation { hol = UTF8.chr 0x2248,
-                       TeX = ("\\HOLTokenWeakEQ", 1) };
 
 (* A more general definition (but many existing hard proofs are still
    using the above “equivalent”).
