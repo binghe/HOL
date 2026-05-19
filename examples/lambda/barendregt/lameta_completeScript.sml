@@ -5957,7 +5957,7 @@ Proof
  >- (‘LENGTH vs = k + 1’ by rw [Abbr ‘vs’, NEWS_def] \\
      rw [Abbr ‘bs’])
  >> STRIP_TAC
- >> ‘vs <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> ‘vs <> []’ by simp [NOT_NIL_EQ_LENGTH_NOT_0]
  (* p1 = ()a b_1 b_2 ... b_k *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’, EVERY_MAP]
