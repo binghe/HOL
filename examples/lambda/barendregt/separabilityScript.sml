@@ -8460,11 +8460,24 @@ Proof
  >> MATCH_MP_TAC subtree_equiv_alt_equivalent_subterm >> art []
 QED
 
-Theorem beta_separability :
-    !X M N r.
-       FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\ 0 < r /\
-       has_benf M /\ has_benf N /\ M =/== N ==>
-       !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
+(*   +---------------- =/== ---------------+
+     |                                     |
+     M'    ===    M    =/==    N    ===    N' (BT M' = BT N' = BT M UNION BT N)
+    / \          / \          / \         / \
+   /   \        /   \        /   \       /   \
+  /     \      /  ___\      /___  \     /     \ q   subtree_equiv X M' N' q r
+ /_______\    /___\   _         \__\   /_______\
+          p          (p)            p           p  ~subtree_equiv X M' N' p r
+          |           |             |           |
+          +--- ~=~ ---+---- ~=~ ----+--- ~=~ ---+  ~=~ : ~equivalent
+                      |             |
+                    M^p0 -- ~=~ -- N^p0
+ *)
+Theorem beta_separability_strong :
+    !X M N r. FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\ 0 < r /\
+              has_benf M /\ has_benf N /\ M =/== N ==>
+              !P Q. ?pi. Boehm_transform pi /\
+                         apply pi M -b->* P /\ apply pi N -b->* Q
 Proof
     rw [] (* has_benf --> has_bnf *)
  >> qabbrev_tac ‘paths = ltree_paths (BT' X M r) UNION ltree_paths (BT' X N r)’
@@ -8569,10 +8582,36 @@ Proof
  >> qmatch_abbrev_tac ‘solvable M0 /\ solvable N0 /\ _ ==> _’
  >> STRIP_TAC
  (* applying separability_lemma1 to finish the main proof *)
- >> ‘?p1. Boehm_transform p1 /\ apply p1 M0 == P /\ apply p1 N0 == Q’
-      by PROVE_TAC [separability_lemma1]
+ >> ‘?p1. Boehm_transform p1 /\ apply p1 M0 -b->* P /\ apply p1 N0 -b->* Q’
+      by PROVE_TAC [separability_lemma1']
  >> Q.EXISTS_TAC ‘p1 ++ p0’
  >> simp [Abbr ‘M0’, Abbr ‘N0’, Boehm_transform_APPEND, Boehm_apply_APPEND]
+QED
+
+Theorem beta_separability_strong_final :
+    !M N. has_benf M /\ has_benf N /\ M =/== N ==>
+          !P Q. ?pi. Boehm_transform pi /\
+                     apply pi M -b->* P /\ apply pi N -b->* Q
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘FV M UNION FV N’, ‘M’, ‘N’, ‘1’] beta_separability_strong)
+ >> simp []
+ >> impl_tac >- SET_TAC []
+ >> DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘P’, ‘Q’])
+ >> Q.EXISTS_TAC ‘pi’ >> art []
+QED
+
+Theorem beta_separability :
+    !X M N r.
+       FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\ 0 < r /\
+       has_benf M /\ has_benf N /\ M =/== N ==>
+       !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘r’] beta_separability_strong) >> rw []
+ >> POP_ASSUM (MP_TAC o Q.SPECL [‘P’, ‘Q’]) >> rw []
+ >> Q.EXISTS_TAC ‘pi’ >> art []
+ >> simp [betastar_lameq]
 QED
 
 Theorem beta_separability_final :
