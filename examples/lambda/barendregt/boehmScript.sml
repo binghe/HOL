@@ -7198,5 +7198,4 @@ val _ = html_theory "boehm";
  [1] Barendregt, H.P.: The lambda calculus, its syntax and semantics.
      College Publications, London (1984).
  [2] https://en.wikipedia.org/wiki/Corrado_Böhm
-
  *)

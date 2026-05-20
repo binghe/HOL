@@ -4264,9 +4264,8 @@ QED
  *  Boehm construction for vsubterm-based "Boehm out" technique
  *---------------------------------------------------------------------------*)
 
-(* NOTE: This version uses ‘vsubterm_width’ instead of ‘subterm_width’. *)
-Definition Boehm_construction' :
-    Boehm_construction' X (Ms :term list) p =
+Definition Boehm_construction_def :
+    Boehm_construction X (Ms :term list) p =
     let n_max = MAX_LIST (MAP (\e. subterm_length e p) Ms);
         d_max = MAX_LIST (MAP (\e. vsubterm_width e p) Ms) + n_max;
         k     = LENGTH Ms;
@@ -4285,10 +4284,10 @@ Definition Boehm_construction' :
         p3 ++ p2 ++ p1
 End
 
-Theorem Boehm_construction_transform' :
-    !X Ms p. Boehm_transform (Boehm_construction' X Ms p)
+Theorem Boehm_construction_transform :
+    !X Ms p. Boehm_transform (Boehm_construction X Ms p)
 Proof
-    RW_TAC std_ss [Boehm_construction']
+    RW_TAC std_ss [Boehm_construction_def]
  >> MATCH_MP_TAC Boehm_transform_APPEND
  >> reverse CONJ_TAC
  >- rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -4298,17 +4297,17 @@ Proof
  >> rw [Boehm_transform_def, Abbr ‘p2’, EVERY_GENLIST]
 QED
 
-Theorem FV_apply_Boehm_construction' :
+Theorem FV_apply_Boehm_construction :
     !X Ms Ms' p r.
        FINITE X /\ 0 < r /\ set Ms' SUBSET set Ms /\
        BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r ==>
       !M. MEM M Ms ==>
-          FV (apply (Boehm_construction' X Ms' p) M) SUBSET X UNION RANK r
+          FV (apply (Boehm_construction X Ms' p) M) SUBSET X UNION RANK r
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> Q.X_GEN_TAC ‘N’
  >> DISCH_TAC
- >> UNBETA_TAC [Boehm_construction'] “Boehm_construction' X Ms' p”
+ >> UNBETA_TAC [Boehm_construction_def] “Boehm_construction X Ms' p”
  >> qunabbrev_tac ‘Z’
  >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set Ms'))’
  >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> rw [])
@@ -4896,7 +4895,7 @@ Theorem vsubterm_equivalent_lemma :
     !X Ms p r pi.
            FINITE X /\ p <> [] /\ 0 < r /\
            BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r /\
-           pi = Boehm_construction' X Ms p /\ EVERY solvable Ms ==>
+           pi = Boehm_construction X Ms p /\ EVERY solvable Ms ==>
           (!M. MEM M Ms ==>
                is_ready' (apply pi M) /\
                HD p < hnf_children_size (principal_hnf (apply pi M))) /\
@@ -4919,8 +4918,8 @@ Theorem vsubterm_equivalent_lemma :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> Q.PAT_X_ASSUM ‘pi = _’ (REWRITE_TAC o wrap)
- >> qabbrev_tac ‘pi' = Boehm_construction' X Ms p’
- >> ‘Boehm_transform pi'’ by PROVE_TAC [Boehm_construction_transform']
+ >> qabbrev_tac ‘pi' = Boehm_construction X Ms p’
+ >> ‘Boehm_transform pi'’ by PROVE_TAC [Boehm_construction_transform]
  (* define Y as the set of all FVs from all Ms *)
  >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set Ms))’
  >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> simp [])
@@ -5173,10 +5172,10 @@ Proof
  >> Q.PAT_X_ASSUM ‘Boehm_transform pi'’ MP_TAC
  >> Know ‘!i. i < k ==> FV (apply pi' (M i)) SUBSET X UNION RANK r’
  >- (rpt STRIP_TAC \\
-     qunabbrev_tac ‘pi'’ >> irule FV_apply_Boehm_construction' >> art [] \\
+     qunabbrev_tac ‘pi'’ >> irule FV_apply_Boehm_construction >> art [] \\
      Q.EXISTS_TAC ‘Ms’ >> simp [Abbr ‘M’, EL_MEM])
  >> Know ‘pi' = p3 ++ p2 ++ p1’
- >- (rw [Abbr ‘pi'’, Boehm_construction'] \\
+ >- (rw [Abbr ‘pi'’, Boehm_construction_def] \\
      simp [Abbr ‘p2’, LIST_EQ_REWRITE])
  >> Rewr'
  (* “Boehm_construction” is now eliminated, back to old steps *)
@@ -9105,11 +9104,11 @@ Proof
      Q.PAT_X_ASSUM ‘MEM M Ms'’ MP_TAC \\
      rw [Abbr ‘Ms'’, MEM_FILTER])
  >> DISCH_TAC
- >> qabbrev_tac ‘pi' = Boehm_construction' X Ms' p’
+ >> qabbrev_tac ‘pi' = Boehm_construction X Ms' p’
  >> MP_TAC (Q.SPECL [‘X’, ‘Ms'’, ‘p’, ‘r’, ‘pi'’] vsubterm_equivalent_lemma)
  >> rw []
  >> Q.EXISTS_TAC ‘pi'’
- >> CONJ_ASM1_TAC >- simp [Abbr ‘pi'’, Boehm_construction_transform']
+ >> CONJ_ASM1_TAC >- simp [Abbr ‘pi'’, Boehm_construction_transform]
  >> CONJ_TAC (* is_ready *)
  >- (rpt STRIP_TAC \\
      reverse (Cases_on ‘solvable M’)
@@ -9128,7 +9127,7 @@ Proof
  (* FV SUBSET X UNINO RANK r *)
  >> CONJ_TAC
  >- (rw [Abbr ‘pi'’] \\
-     irule FV_apply_Boehm_construction' >> art [] \\
+     irule FV_apply_Boehm_construction >> art [] \\
      Q.EXISTS_TAC ‘Ms’ >> art [])
  (* subterm <> NONE ==> subterm <> NONE *)
  >> CONJ_TAC
