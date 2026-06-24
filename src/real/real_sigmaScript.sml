@@ -4020,6 +4020,27 @@ Proof
  >> Q.EXISTS_TAC ‘x’ >> art []
 QED
 
+Theorem REAL_SUM_IMAGE_COUNT_ONE :
+    !(f :num -> real). REAL_SUM_IMAGE f (count 1) = f 0
+Proof
+    rw [COUNT_ONE]
+QED
+
+Theorem REAL_SUM_IMAGE_COUNT_THREE :
+    !(f :num -> real). REAL_SUM_IMAGE f (count 3) = f 0 + f 1 + f 2
+Proof
+    rw []
+ >> ‘count 3 = {0; 1; 2}’
+      by RW_TAC real_ss [EXTENSION, IN_COUNT, IN_INSERT, IN_SING]
+ >> ‘{1:num} DELETE 0 = {1}’ by RW_TAC real_ss [EXTENSION, IN_DELETE, IN_SING]
+ >> ‘{2:num} DELETE 1 = {2}’ by RW_TAC real_ss [EXTENSION, IN_DELETE, IN_SING]
+ >> ‘{1:num; 2} DELETE 0 = {1; 2}’
+       by RW_TAC real_ss [EXTENSION, IN_DELETE, IN_SING, IN_INSERT]
+ >> FULL_SIMP_TAC real_ss [FINITE_SING, FINITE_INSERT, REAL_SUM_IMAGE_THM,
+                           REAL_SUM_IMAGE_SING, IN_INSERT, NOT_IN_EMPTY,
+                           REAL_ADD_ASSOC]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Analogous notion of finite products                                       *)
 (*   (generally for use in descendent theories)                              *)

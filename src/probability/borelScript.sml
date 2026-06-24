@@ -2809,6 +2809,18 @@ Proof
  >> METIS_TAC [IN_MEASURABLE_BOREL_ALL, extreal_div_eq, REAL_LT_IMP_NE]
 QED
 
+Theorem IN_MEASURABLE_BOREL_CDIV :
+    !a f g z. sigma_algebra a /\ f IN Borel_measurable a /\ z <> 0 ∧
+             (!x. x IN space a ==> g x = f x / Normal z) ==>
+              g IN Borel_measurable a
+Proof
+    rpt STRIP_TAC
+ >> irule IN_MEASURABLE_BOREL_CMUL >> simp []
+ >> qexistsl [‘f’, ‘inv z’] >> simp []
+ >> rw [extreal_div_def]
+ >> METIS_TAC [extreal_inv_eq, mul_comm]
+QED
+
 Theorem IN_MEASURABLE_BOREL_MINUS :
     !a f g. sigma_algebra a /\ f IN measurable a Borel /\
            (!x. x IN space a ==> (g x = -f x)) ==> g IN measurable a Borel
